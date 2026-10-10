@@ -466,6 +466,7 @@
   .monthly-item-name { color: var(--text); font-weight: 600; }
   .monthly-item-calc { color: var(--text-light); font-size: 12px; }
   .monthly-item-calc b { color: #B87B3A; }
+  .monthly-item.cancelled-item .monthly-item-calc b { color: #B87B6E; }
 
   .monthly-actions {
     display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
@@ -693,6 +694,19 @@ function isSameDay(d1, d2) {
          d1.getDate() === d2.getDate();
 }
 
+// ✅ دالة مساعدة: هل المادة ملغاة؟ (تتعامل مع الأرشيف)
+function isItemCancelled(item) {
+  const effectiveStatus = item.status === "archived"
+    ? (item.previousStatus || "active")
+    : item.status;
+  return effectiveStatus === "cancelled";
+}
+
+// ✅ دالة مساعدة: إجمالي المادة
+function itemTotal(item) {
+  return (parseFloat(item.weight) || 0) * (parseFloat(item.price) || 0);
+}
+
 let username = "";
 let items = [];
 let activities = [];
@@ -726,19 +740,19 @@ if (savedUser) {
   document.getElementById("usernameInput").value = savedUser;
 }
 
-// ✅ شريط اليوم مع إجمالي اليوم
+// ✅ شريط اليوم مع إجمالي اليوم (يستبعد الملغاة)
 function renderTodayBar() {
   const bar = document.getElementById("todayBar");
   if (!bar) return;
 
   const today = new Date();
   const todayItems = items.filter(i => {
-    if (!i.createdAt || i.status === "cancelled") return false;
+    if (!i.createdAt) return false;
+    if (isItemCancelled(i)) return false;   // ✅ استبعاد الملغاة
     return isSameDay(i.createdAt.toDate(), today);
   });
 
-  const total = todayItems.reduce((s, i) =>
-    s + ((parseFloat(i.weight) || 0) * (parseFloat(i.price) || 0)), 0);
+  const total = todayItems.reduce((s, i) => s + itemTotal(i), 0);
 
   bar.innerHTML = `
     <span class="today-label">اليوم</span>
@@ -901,24 +915,26 @@ function buildItemCard(item) {
   `;
 }
 
-// ✅ الإحصائيات = مشتريات اليوم كاملة (نشط + تم + مؤرشف)
+// ✅ الإحصائيات = مشتريات اليوم (نشط + تم + مؤرشف) بدون الملغاة
 function updateSummary() {
   const today = new Date();
 
   const todayAll = items.filter(i => {
     if (!i.createdAt) return false;
-    if (i.status === "cancelled") return false;
+    if (isItemCancelled(i)) return false;   // ✅ استبعاد الملغاة
     return isSameDay(i.createdAt.toDate(), today);
   });
 
   const todayActive = todayAll.filter(i => i.status === "active");
   const todayDone = todayAll.filter(i => i.status === "done");
   const todayCancelled = items.filter(i =>
-    i.createdAt && isSameDay(i.createdAt.toDate(), today) && i.status === "cancelled"
+    i.createdAt &&
+    isSameDay(i.createdAt.toDate(), today) &&
+    isItemCancelled(i)
   );
 
   const todayWeight = todayAll.reduce((s, i) => s + (parseFloat(i.weight) || 0), 0);
-  const todayPrice = todayAll.reduce((s, i) => s + ((parseFloat(i.weight) || 0) * (parseFloat(i.price) || 0)), 0);
+  const todayPrice = todayAll.reduce((s, i) => s + itemTotal(i), 0);
 
   document.getElementById("totalWeight").textContent = todayWeight.toFixed(1);
   document.getElementById("totalPrice").textContent = todayPrice.toFixed(2);
@@ -931,15 +947,12 @@ function updateSummary() {
 
 // ============ 🕛 مُحدِّث منتصف الليل ============
 function startMidnightWatcher() {
-  // فحص كل دقيقة
   setInterval(checkDayChange, 60 * 1000);
 
-  // فحص عند العودة للتطبيق من الخلفية
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) checkDayChange();
   });
 
-  // فحص عند استعادة التركيز
   window.addEventListener("focus", checkDayChange);
 }
 
@@ -947,7 +960,6 @@ function checkDayChange() {
   const currentDay = new Date().toDateString();
   if (currentDay !== lastRenderedDay) {
     lastRenderedDay = currentDay;
-    // يوم جديد! أعد حساب كل شيء
     updateSummary();
     renderItems();
     toast("🌅 يوم جديد — تم تحديث الإحصائيات");
@@ -1075,17 +1087,9 @@ window.openItemSheet = function(id = null) {
       }
     });
     
-    sheet.addEventListener('click', function(e) {
-      e.stopPropagation();
-    });
-    
-    sheet.addEventListener('mousedown', function(e) {
-      e.stopPropagation();
-    });
-    
-    sheet.addEventListener('mouseup', function(e) {
-      e.stopPropagation();
-    });
+    sheet.addEventListener('click', function(e) { e.stopPropagation(); });
+    sheet.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+    sheet.addEventListener('mouseup', function(e) { e.stopPropagation(); });
   }
 };
 
@@ -1377,11 +1381,13 @@ window.showMonthlyReport = function() {
   const sortedDays = Object.keys(byDay).sort((a, b) => b - a);
 
   let monthlyTotal = 0;
+  let monthlyCount = 0;   // ✅ عدّاد للمواد غير الملغاة
   let html = "";
 
   sortedDays.forEach(day => {
     const dayItems = byDay[day];
     let dayTotal = 0;
+    let dayCount = 0;
 
     const dayDate = new Date(currentYear, currentMonth, parseInt(day, 10));
     const dayName = AR_DAYS[dayDate.getDay()];
@@ -1391,12 +1397,17 @@ window.showMonthlyReport = function() {
       const w = parseFloat(item.weight) || 0;
       const p = parseFloat(item.price) || 0;
       const t = w * p;
-      dayTotal += t;
 
       const isArchived = item.status === "archived";
       const effectiveStatus = isArchived ? (item.previousStatus || "active") : item.status;
       const isCancelled = effectiveStatus === "cancelled";
       const isDone = effectiveStatus === "done";
+
+      // ✅ لا نضيف الملغاة إلى المجموع (تصحيح رجعي)
+      if (!isCancelled) {
+        dayTotal += t;
+        dayCount++;
+      }
 
       let style = '';
       if (isCancelled) style = 'style="opacity:0.5;text-decoration:line-through;"';
@@ -1407,13 +1418,16 @@ window.showMonthlyReport = function() {
       else if (isDone) badge = ' ✅';
       else if (isCancelled) badge = ' ⏸️';
 
-      return `<div class="monthly-item" ${style}>
+      const itemClass = isCancelled ? 'monthly-item cancelled-item' : 'monthly-item';
+
+      return `<div class="${itemClass}" ${style}>
         <span class="monthly-item-name">${escapeHtml(item.name)}${badge}</span>
         <span class="monthly-item-calc">${w} ${item.unit || ""} × ${p.toFixed(2)} = <b>${t.toFixed(2)} $</b></span>
       </div>`;
     }).join("");
 
     monthlyTotal += dayTotal;
+    monthlyCount += dayCount;
 
     html += `
       <div class="monthly-day">
@@ -1458,7 +1472,7 @@ window.showMonthlyReport = function() {
           </div>
 
           <div class="monthly-month-name">
-            إجمالي ${monthItems.length} مادة على ${sortedDays.length} يوم
+            إجمالي ${monthlyCount} مادة على ${sortedDays.length} يوم
           </div>
 
           ${html}
