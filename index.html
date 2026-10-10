@@ -9,17 +9,11 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   :root {
-    --bg: #F5F1EA;
-    --card: #FFFFFF;
-    --primary: #6B9080;
-    --primary-dark: #4A6D5F;
-    --accent: #C9A58D;
-    --text: #2D3A3A;
-    --text-light: #7A8787;
-    --border: #EAE3D9;
-    --danger: #B87B6E;
-    --success: #7BA77E;
-    --success-dark: #4A7C4E;
+    --bg: #F5F1EA; --card: #FFFFFF;
+    --primary: #6B9080; --primary-dark: #4A6D5F;
+    --accent: #C9A58D; --text: #2D3A3A; --text-light: #7A8787;
+    --border: #EAE3D9; --danger: #B87B6E;
+    --success: #7BA77E; --success-dark: #4A7C4E;
     --warning: #D4A55C;
     --shadow: 0 2px 12px rgba(45, 58, 58, 0.06);
     --shadow-lg: 0 8px 32px rgba(45, 58, 58, 0.12);
@@ -34,38 +28,29 @@
   [data-tooltip] { position: relative; }
   [data-tooltip]::before {
     content: attr(data-tooltip);
-    position: absolute;
-    bottom: 105%; left: 50%;
+    position: absolute; bottom: 105%; left: 50%;
     transform: translateX(-50%) translateY(5px);
     background: #2D3A3A; color: white;
     padding: 6px 12px; border-radius: 8px;
     font-size: 12px; font-weight: 500;
     white-space: nowrap; opacity: 0;
-    pointer-events: none;
-    transition: all 0.25s; z-index: 999;
+    pointer-events: none; transition: all 0.25s; z-index: 999;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
   [data-tooltip]::after {
-    content: "";
-    position: absolute;
-    bottom: 95%; left: 50%;
+    content: ""; position: absolute; bottom: 95%; left: 50%;
     transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #2D3A3A;
-    opacity: 0; pointer-events: none;
-    transition: all 0.25s; z-index: 999;
+    border: 5px solid transparent; border-top-color: #2D3A3A;
+    opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 999;
   }
   [data-tooltip]:hover::before,
   [data-tooltip]:hover::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    opacity: 1; transform: translateX(-50%) translateY(0);
   }
 
   .login-wrap {
-    min-height: 100vh;
-    display: flex; flex-direction: column;
-    justify-content: center; align-items: center;
-    padding: 24px;
+    min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; padding: 24px;
     background: linear-gradient(160deg, #F5F1EA 0%, #E8DFD2 100%);
   }
   .login-logo {
@@ -163,6 +148,31 @@
   }
   .monthly-big-btn:active { transform: scale(0.98); }
 
+  /* ✅ أزرار إضافية */
+  .extra-btns {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .extra-btn {
+    padding: 14px;
+    border-radius: 14px;
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    border: none;
+  }
+  .extra-btn:active { transform: scale(0.97); }
+  .extra-btn.archive-btn {
+    background: #E8EEF2; color: #4A6D5F;
+    border: 2px dashed #4A6D5F;
+  }
+  .extra-btn.missing-btn {
+    background: #FFF3D6; color: #8B6914;
+    border: 2px dashed #D4A55C;
+  }
+
   .end-day-btn {
     width: 100%; padding: 14px; margin-bottom: 16px;
     border: 2px dashed #B87B6E; border-radius: 14px;
@@ -174,7 +184,6 @@
     transition: all 0.2s;
   }
   .end-day-btn:active { transform: scale(0.98); }
-  .end-day-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .today-bar {
     display: flex; align-items: center; gap: 8px;
@@ -266,7 +275,29 @@
   .item-card.cancelled .action-btn.edit { color: #A8C4B5; border-color: #3A5A4A; }
   .item-card.cancelled .item-actions { border-top-color: #444; }
 
-  .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+  /* ✅ بطاقة المؤرشفة */
+  .item-card.archived {
+    background: #F0F5F8; border: 2px dashed #4A6D5F;
+  }
+  .item-card.archived .item-name { color: #2E4A45; }
+  .item-card.archived .item-meta,
+  .item-card.archived .item-meta .item-badge { color: #5A7A72; }
+  .item-card.archived .item-badge { background: #D8E5EA; color: #4A6D5F; }
+
+  /* ⚠️ مادة ناقصة البيانات */
+  .item-card.missing-data {
+    border: 2px solid var(--warning);
+    background: #FFFCF5;
+  }
+  .item-card.missing-data::before {
+    content: "⚠️ بيانات ناقصة";
+    position: absolute; top: -10px; right: 12px;
+    background: var(--warning); color: white;
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 700;
+  }
+
+  .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; position: relative; }
   .item-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
   .item-meta { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .item-badge {
@@ -277,6 +308,7 @@
   .item-badge.cancelled { background: #F5E0DC; color: var(--danger); }
   .item-badge.done-badge { background: var(--success); color: white; }
   .item-badge.date-badge { background: #E8EEF2; color: #4A6D5F; }
+  .item-badge.archived-badge { background: #4A6D5F; color: white; }
   .item-card.done .item-badge.date-badge { background: #C8E0CA; color: #2E5233; }
   .item-card.cancelled .item-badge.date-badge { background: #3A3A3A; color: #C0C0C0; }
 
@@ -330,6 +362,7 @@
   .action-btn.restore { color: var(--success); border-color: #D5E3DC; }
   .action-btn.done { color: var(--success-dark); border-color: #C8E0CA; background: #E8F5E9; }
   .action-btn.undo { color: #B8860B; border-color: #E5D5A8; }
+  .action-btn.unarchive { color: #4A6D5F; border-color: #B8D0C8; background: #E8F0EC; }
 
   .section-divider {
     display: flex; align-items: center; gap: 12px;
@@ -376,12 +409,6 @@
     background: var(--bg); border-radius: 28px 28px 0 0;
     padding: 8px 20px 32px; overflow-y: auto;
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    pointer-events: auto;
-  }
-  .modal-overlay .sheet input,
-  .modal-overlay .sheet select,
-  .modal-overlay .sheet textarea,
-  .modal-overlay .sheet button {
     pointer-events: auto;
   }
   .sheet-handle {
@@ -509,6 +536,7 @@
   .activity-icon.done { background: #D6EBD8; }
   .activity-icon.undo { background: #F5EEDC; }
   .activity-icon.archive { background: #E8EEF2; }
+  .activity-icon.unarchive { background: #D8E5EA; }
   .activity-content { flex: 1; min-width: 0; }
   .activity-text { font-size: 14px; margin-bottom: 3px; }
   .activity-text b { color: var(--primary-dark); }
@@ -543,6 +571,18 @@
     border: none; font-size: 24px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
+
+  .archive-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .archive-stat {
+    background: var(--card); border-radius: 12px;
+    padding: 12px; text-align: center;
+    border: 1px solid var(--border);
+  }
+  .archive-stat-label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
+  .archive-stat-value { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
 
   @media print {
     body * { visibility: hidden; }
@@ -637,6 +677,16 @@
 
     <div class="today-bar" id="todayBar"></div>
 
+    <!-- ✅ أزرار إضافية: الأرشيف + الناقصة -->
+    <div class="extra-btns">
+      <button class="extra-btn archive-btn" onclick="showArchive()" data-tooltip="📂 عرض المواد المؤرشفة وتعديلها">
+        📂 الأرشيف <span id="archiveCount" style="opacity:0.7;"></span>
+      </button>
+      <button class="extra-btn missing-btn" onclick="showMissingData()" data-tooltip="⚠️ المواد التي ينقصها وزن أو سعر">
+        ⚠️ ناقصة <span id="missingCount" style="opacity:0.7;"></span>
+      </button>
+    </div>
+
     <button class="end-day-btn" id="endDayBtn" onclick="endDay()"
             data-tooltip="📦 إخفاء مواد اليوم من القائمة (تبقى في السجل الشهري)">
       📦 إنهاء اليوم (أرشفة)
@@ -679,7 +729,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ============ 📅 أسماء الأيام والشهور ============
 const AR_DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
@@ -694,7 +743,7 @@ function isSameDay(d1, d2) {
          d1.getDate() === d2.getDate();
 }
 
-// ✅ دالة مساعدة: هل المادة ملغاة؟ (تتعامل مع الأرشيف)
+// ✅ دالة مساعدة
 function isItemCancelled(item) {
   const effectiveStatus = item.status === "archived"
     ? (item.previousStatus || "active")
@@ -702,9 +751,15 @@ function isItemCancelled(item) {
   return effectiveStatus === "cancelled";
 }
 
-// ✅ دالة مساعدة: إجمالي المادة
 function itemTotal(item) {
   return (parseFloat(item.weight) || 0) * (parseFloat(item.price) || 0);
+}
+
+// ✅ هل المادة ناقصة بيانات؟
+function isItemMissingData(item) {
+  const w = parseFloat(item.weight) || 0;
+  const p = parseFloat(item.price);
+  return w === 0 || p === null || p === undefined || isNaN(p);
 }
 
 let username = "";
@@ -740,7 +795,6 @@ if (savedUser) {
   document.getElementById("usernameInput").value = savedUser;
 }
 
-// ✅ شريط اليوم مع إجمالي اليوم (يستبعد الملغاة)
 function renderTodayBar() {
   const bar = document.getElementById("todayBar");
   if (!bar) return;
@@ -748,7 +802,7 @@ function renderTodayBar() {
   const today = new Date();
   const todayItems = items.filter(i => {
     if (!i.createdAt) return false;
-    if (isItemCancelled(i)) return false;   // ✅ استبعاد الملغاة
+    if (isItemCancelled(i)) return false;
     return isSameDay(i.createdAt.toDate(), today);
   });
 
@@ -769,6 +823,7 @@ function listenItems() {
     items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderItems();
     updateSummary();
+    updateCounts();
   }, (error) => {
     console.error("خطأ في القراءة:", error);
   });
@@ -789,6 +844,18 @@ async function logActivity(action, itemName, details = "") {
       at: serverTimestamp(), details
     });
   } catch(e) { console.error(e); }
+}
+
+// ✅ تحديث عدادات الأرشيف والناقصة
+function updateCounts() {
+  const archivedCount = items.filter(i => i.status === "archived").length;
+  const missingCount = items.filter(i => isItemMissingData(i) && i.status !== "archived" && i.status !== "cancelled").length;
+
+  const archiveEl = document.getElementById("archiveCount");
+  const missingEl = document.getElementById("missingCount");
+
+  if (archiveEl) archiveEl.textContent = archivedCount > 0 ? `(${archivedCount})` : "";
+  if (missingEl) missingEl.textContent = missingCount > 0 ? `(${missingCount})` : "";
 }
 
 window.renderItems = function() {
@@ -829,11 +896,14 @@ window.renderItems = function() {
   list.innerHTML = html;
 };
 
-function buildItemCard(item) {
+function buildItemCard(item, options = {}) {
+  const { showUnarchive = false } = options;
   const isCancelled = item.status === "cancelled";
   const isDone = item.status === "done";
-  const createdBy = item.createdBy || "؟";
+  const isArchived = item.status === "archived";
+  const isMissing = isItemMissingData(item) && !isCancelled;
 
+  const createdBy = item.createdBy || "؟";
   const createdDate = item.createdAt ? item.createdAt.toDate() : null;
   const dateBadge = createdDate
     ? `<span class="item-badge date-badge">📅 ${formatFullDate(createdDate)}</span>`
@@ -858,33 +928,43 @@ function buildItemCard(item) {
     : "";
 
   let statusBadge = "";
-  if (isCancelled) statusBadge = '<span class="item-badge cancelled">ملغاة</span>';
+  if (isArchived) statusBadge = '<span class="item-badge archived-badge">📦 مؤرشف</span>';
+  else if (isCancelled) statusBadge = '<span class="item-badge cancelled">ملغاة</span>';
   else if (isDone) statusBadge = '<span class="item-badge done-badge">✅ تم</span>';
 
   let actionButtons = "";
-  if (isCancelled) {
+  if (showUnarchive) {
+    // مواد الأرشيف
     actionButtons = `
-      <button class="action-btn restore" onclick="toggleCancel('${item.id}')" data-tooltip="♻️ استرجاع المادة للقائمة النشطة">♻️ استرجاع</button>
-      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف المادة نهائياً">🗑️ حذف</button>
+      <button class="action-btn unarchive" onclick="unarchiveItem('${item.id}')" data-tooltip="♻️ استرجاع للقائمة الرئيسية">♻️ استرجاع</button>
+      <button class="action-btn edit" onclick="openItemSheet('${item.id}')" data-tooltip="✏️ تعديل البيانات">✏️ تعديل</button>
+      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف نهائي">🗑️ حذف</button>
+    `;
+  } else if (isCancelled) {
+    actionButtons = `
+      <button class="action-btn restore" onclick="toggleCancel('${item.id}')" data-tooltip="♻️ استرجاع">♻️ استرجاع</button>
+      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف">🗑️ حذف</button>
     `;
   } else if (isDone) {
     actionButtons = `
-      <button class="action-btn undo" onclick="toggleDone('${item.id}')" data-tooltip="↩️ إرجاع المادة للقائمة النشطة">↩️ تراجع</button>
-      <button class="action-btn edit" onclick="openItemSheet('${item.id}')" data-tooltip="✏️ تعديل بيانات المادة">✏️ تعديل</button>
-      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف المادة نهائياً">🗑️ حذف</button>
+      <button class="action-btn undo" onclick="toggleDone('${item.id}')" data-tooltip="↩️ تراجع">↩️ تراجع</button>
+      <button class="action-btn edit" onclick="openItemSheet('${item.id}')" data-tooltip="✏️ تعديل">✏️ تعديل</button>
+      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف">🗑️ حذف</button>
     `;
   } else {
     actionButtons = `
-      <button class="action-btn done" onclick="toggleDone('${item.id}')" data-tooltip="✅ تم شراء هذه المادة">✅ تم</button>
-      <button class="action-btn cancel" onclick="toggleCancel('${item.id}')" data-tooltip="⏸️ إلغاء المادة (نقلها للملغاة)">⏸️ إلغاء</button>
+      <button class="action-btn done" onclick="toggleDone('${item.id}')" data-tooltip="✅ تم">✅ تم</button>
+      <button class="action-btn cancel" onclick="toggleCancel('${item.id}')" data-tooltip="⏸️ إلغاء">⏸️ إلغاء</button>
       <button class="action-btn edit" onclick="openItemSheet('${item.id}')" data-tooltip="✏️ تعديل">✏️</button>
       <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف">🗑️</button>
     `;
   }
 
   let cardClass = "item-card";
+  if (isArchived) cardClass += " archived";
   if (isCancelled) cardClass += " cancelled";
   else if (isDone) cardClass += " done";
+  if (isMissing && !isArchived) cardClass += " missing-data";
 
   return `
     <div class="${cardClass}">
@@ -915,22 +995,19 @@ function buildItemCard(item) {
   `;
 }
 
-// ✅ الإحصائيات = مشتريات اليوم (نشط + تم + مؤرشف) بدون الملغاة
 function updateSummary() {
   const today = new Date();
 
   const todayAll = items.filter(i => {
     if (!i.createdAt) return false;
-    if (isItemCancelled(i)) return false;   // ✅ استبعاد الملغاة
+    if (isItemCancelled(i)) return false;
     return isSameDay(i.createdAt.toDate(), today);
   });
 
   const todayActive = todayAll.filter(i => i.status === "active");
   const todayDone = todayAll.filter(i => i.status === "done");
   const todayCancelled = items.filter(i =>
-    i.createdAt &&
-    isSameDay(i.createdAt.toDate(), today) &&
-    isItemCancelled(i)
+    i.createdAt && isSameDay(i.createdAt.toDate(), today) && isItemCancelled(i)
   );
 
   const todayWeight = todayAll.reduce((s, i) => s + (parseFloat(i.weight) || 0), 0);
@@ -945,14 +1022,12 @@ function updateSummary() {
   renderTodayBar();
 }
 
-// ============ 🕛 مُحدِّث منتصف الليل ============
+// ============ 🕛 منتصف الليل ============
 function startMidnightWatcher() {
   setInterval(checkDayChange, 60 * 1000);
-
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) checkDayChange();
   });
-
   window.addEventListener("focus", checkDayChange);
 }
 
@@ -965,6 +1040,120 @@ function checkDayChange() {
     toast("🌅 يوم جديد — تم تحديث الإحصائيات");
   }
 }
+
+// ============ 📂 الأرشيف ============
+window.showArchive = function() {
+  const archived = items.filter(i => i.status === "archived")
+    .sort((a, b) => (b.archivedAt?.toDate?.() || 0) - (a.archivedAt?.toDate?.() || 0));
+
+  // إحصائيات
+  const totalValue = archived.reduce((s, i) => s + itemTotal(i), 0);
+  const withMissing = archived.filter(i => isItemMissingData(i)).length;
+
+  const content = archived.length === 0
+    ? `<div class="empty">
+         <div class="empty-emoji">📭</div>
+         <div class="empty-title">لا توجد مواد مؤرشفة</div>
+         <div class="empty-sub">عند الضغط على "إنهاء اليوم" ستظهر هنا</div>
+       </div>`
+    : archived.map(item => buildItemCard(item, { showUnarchive: true })).join("");
+
+  const html = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeArchive()">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">
+          📂 الأرشيف (${archived.length})
+          <button class="sheet-close" onclick="closeArchive()" data-tooltip="✕ إغلاق">✕</button>
+        </div>
+
+        ${archived.length > 0 ? `
+        <div class="archive-stats">
+          <div class="archive-stat">
+            <div class="archive-stat-label">💰 القيمة الإجمالية</div>
+            <div class="archive-stat-value">${totalValue.toFixed(2)} $</div>
+          </div>
+          <div class="archive-stat">
+            <div class="archive-stat-label">⚠️ ناقصة البيانات</div>
+            <div class="archive-stat-value" style="color:${withMissing > 0 ? '#D4A55C' : '#4A6D5F'};">${withMissing}</div>
+          </div>
+        </div>
+        ` : ""}
+
+        ${content}
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", html);
+};
+
+window.closeArchive = function() {
+  document.querySelector(".modal-overlay")?.remove();
+};
+
+window.unarchiveItem = async function(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  try {
+    await updateDoc(doc(db, "items", id), {
+      status: item.previousStatus || "active",
+      archivedAt: null,
+      previousStatus: null
+    });
+    await logActivity("unarchive", item.name);
+    toast("♻️ تم الاسترجاع للقائمة");
+    // إعادة فتح الأرشيف بعد التحديث
+    setTimeout(() => {
+      closeArchive();
+      setTimeout(showArchive, 300);
+    }, 500);
+  } catch(e) { toast("خطأ: " + e.message); }
+};
+
+// ============ ⚠️ المواد الناقصة ============
+window.showMissingData = function() {
+  const missing = items.filter(i =>
+    isItemMissingData(i) &&
+    i.status !== "cancelled" &&
+    i.status !== "archived"
+  );
+
+  const content = missing.length === 0
+    ? `<div class="empty">
+         <div class="empty-emoji">✨</div>
+         <div class="empty-title">كل المواد مكتملة!</div>
+         <div class="empty-sub">لا توجد مواد ينقصها وزن أو سعر</div>
+       </div>`
+    : missing.map(item => buildItemCard(item)).join("");
+
+  const html = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeMissingData()">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">
+          ⚠️ مواد ناقصة (${missing.length})
+          <button class="sheet-close" onclick="closeMissingData()" data-tooltip="✕ إغلاق">✕</button>
+        </div>
+
+        ${missing.length > 0 ? `
+          <div style="background:#FFF3D6; border:1px dashed #D4A55C; border-radius:12px; padding:12px; margin-bottom:14px; font-size:13px; color:#8B6914; line-height:1.6;">
+            💡 <b>هذه المواد ينقصها الوزن أو السعر</b><br>
+            اضغط <b>✏️ تعديل</b> على كل مادة لإدخال البيانات الصحيحة.
+          </div>
+        ` : ""}
+
+        ${content}
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", html);
+};
+
+window.closeMissingData = function() {
+  document.querySelector(".modal-overlay")?.remove();
+};
 
 window.openItemSheet = function(id = null) {
   editingId = id;
@@ -1034,16 +1223,16 @@ window.openItemSheet = function(id = null) {
         <div class="input-group" style="margin-top: 16px;">
           <label class="input-label">إضافة وسائط</label>
           <div class="media-picker">
-            <button type="button" class="media-pick-btn" onclick="pickCamera()" data-tooltip="📷 التقاط صورة بالكاميرا">
+            <button type="button" class="media-pick-btn" onclick="pickCamera()" data-tooltip="📷 الكاميرا">
               <span class="emoji">📷</span><span>الكاميرا</span>
             </button>
-            <button type="button" class="media-pick-btn" onclick="pickGallery()" data-tooltip="🖼️ اختيار صورة من المعرض">
+            <button type="button" class="media-pick-btn" onclick="pickGallery()" data-tooltip="🖼️ المعرض">
               <span class="emoji">🖼️</span><span>المعرض</span>
             </button>
-            <button type="button" class="media-pick-btn" onclick="pickAudio()" data-tooltip="🎤 اختيار ملف صوتي">
+            <button type="button" class="media-pick-btn" onclick="pickAudio()" data-tooltip="🎤 ملف صوتي">
               <span class="emoji">🎤</span><span>ملف صوتي</span>
             </button>
-            <button type="button" class="media-pick-btn" onclick="removeMedia()" data-tooltip="✕ إزالة الوسائط المضافة">
+            <button type="button" class="media-pick-btn" onclick="removeMedia()" data-tooltip="✕ إزالة">
               <span class="emoji">✕</span><span>إزالة</span>
             </button>
           </div>
@@ -1051,7 +1240,7 @@ window.openItemSheet = function(id = null) {
 
         <div id="mediaPreview" class="preview-wrap"></div>
 
-        <button class="btn" onclick="saveItem()" style="margin-top: 20px;" data-tooltip="${item ? '💾 حفظ التعديلات' : '＋ إضافة المادة للقائمة'}">
+        <button class="btn" onclick="saveItem()" style="margin-top: 20px;" data-tooltip="${item ? '💾 حفظ التعديلات' : '＋ إضافة المادة'}">
           ${item ? "💾 حفظ التعديلات" : "＋ إضافة المادة"}
         </button>
       </div>
@@ -1070,23 +1259,17 @@ window.openItemSheet = function(id = null) {
   if (overlay && sheet) {
     let mouseDownTarget = null;
     let mouseDownTime = 0;
-    
     overlay.addEventListener('mousedown', function(e) {
       mouseDownTarget = e.target;
       mouseDownTime = Date.now();
     });
-    
     overlay.addEventListener('mouseup', function(e) {
       const timeSinceDown = Date.now() - mouseDownTime;
       const clickedOnOverlay = (mouseDownTarget === overlay) && (e.target === overlay);
       const wasQuickClick = timeSinceDown < 300;
       const enoughTimePassed = (Date.now() - sheetOpenedAt) > 1500;
-      
-      if (clickedOnOverlay && wasQuickClick && enoughTimePassed) {
-        closeSheetSafely();
-      }
+      if (clickedOnOverlay && wasQuickClick && enoughTimePassed) closeSheetSafely();
     });
-    
     sheet.addEventListener('click', function(e) { e.stopPropagation(); });
     sheet.addEventListener('mousedown', function(e) { e.stopPropagation(); });
     sheet.addEventListener('mouseup', function(e) { e.stopPropagation(); });
@@ -1112,14 +1295,10 @@ window.closeSheetSafely = function() {
     const hasData = (nameEl && nameEl.value.trim() !== "") ||
                     (weightEl && weightEl.value.trim() !== "") ||
                     (priceEl && priceEl.value.trim() !== "");
-    
     if (hasData) {
-      if (!confirm("هل تريد إلغاء التعديلات دون حفظ؟")) {
-        return;
-      }
+      if (!confirm("هل تريد إلغاء التعديلات دون حفظ؟")) return;
     }
   }
-  
   closeSheet();
 };
 
@@ -1297,7 +1476,6 @@ window.playAudio = function(id) {
   new Audio(item.audio).play();
 };
 
-// ============ 📦 إنهاء اليوم (أرشفة) ============
 window.endDay = async function() {
   const today = new Date();
 
@@ -1315,7 +1493,7 @@ window.endDay = async function() {
     `📦 أرشفة ${todayItems.length} مادة من مواد اليوم؟\n\n` +
     `• ستختفي من القائمة الرئيسية\n` +
     `• ستبقى محفوظة في السجل الشهري\n` +
-    `• يمكن استرجاعها لاحقاً`
+    `• يمكن استرجاعها من زر "📂 الأرشيف"`
   );
   if (!confirmed) return;
 
@@ -1330,29 +1508,12 @@ window.endDay = async function() {
         archivedAt: serverTimestamp()
       })
     ));
-
     await logActivity("archive", `${todayItems.length} مادة`);
-    toast(`✅ تم أرشفة ${todayItems.length} مادة بنجاح`);
+    toast(`✅ تم أرشفة ${todayItems.length} مادة`);
   } catch (e) {
     console.error(e);
     toast("خطأ: " + e.message);
   }
-};
-
-window.restoreArchived = async function() {
-  const archived = items.filter(i => i.status === "archived");
-  if (archived.length === 0) { toast("لا توجد مواد مؤرشفة"); return; }
-  if (!confirm(`استرجاع ${archived.length} مادة مؤرشفة إلى القائمة؟`)) return;
-
-  try {
-    await Promise.all(archived.map(item =>
-      updateDoc(doc(db, "items", item.id), {
-        status: item.previousStatus || "active",
-        archivedAt: null
-      })
-    ));
-    toast("♻️ تم الاسترجاع");
-  } catch(e) { toast("خطأ: " + e.message); }
 };
 
 // ============ 📊 السجل الشهري ============
@@ -1381,7 +1542,7 @@ window.showMonthlyReport = function() {
   const sortedDays = Object.keys(byDay).sort((a, b) => b - a);
 
   let monthlyTotal = 0;
-  let monthlyCount = 0;   // ✅ عدّاد للمواد غير الملغاة
+  let monthlyCount = 0;
   let html = "";
 
   sortedDays.forEach(day => {
@@ -1403,7 +1564,6 @@ window.showMonthlyReport = function() {
       const isCancelled = effectiveStatus === "cancelled";
       const isDone = effectiveStatus === "done";
 
-      // ✅ لا نضيف الملغاة إلى المجموع (تصحيح رجعي)
       if (!isCancelled) {
         dayTotal += t;
         dayCount++;
@@ -1457,10 +1617,10 @@ window.showMonthlyReport = function() {
         </div>
 
         <div class="monthly-actions">
-          <button class="monthly-action-btn pdf" onclick="saveMonthlyPDF()" data-tooltip="📄 تنزيل التقرير كملف PDF">
+          <button class="monthly-action-btn pdf" onclick="saveMonthlyPDF()" data-tooltip="📄 حفظ PDF">
             📄 حفظ PDF
           </button>
-          <button class="monthly-action-btn whatsapp" onclick="shareMonthlyWhatsApp()" data-tooltip="💬 مشاركة التقرير على واتساب">
+          <button class="monthly-action-btn whatsapp" onclick="shareMonthlyWhatsApp()" data-tooltip="💬 واتساب">
             💬 مشاركة واتساب
           </button>
         </div>
@@ -1520,17 +1680,14 @@ window.shareMonthlyWhatsApp = function() {
     text += `\n`;
   });
 
-  text += `━━━━━━━━━━━━━━━━━━\n`;
-  text += `📱 تطبيق بيتنا`;
+  text += `━━━━━━━━━━━━━━━━━━\n📱 تطبيق بيتنا`;
 
   if (navigator.share) {
     navigator.share({
       title: `السجل الشهري - ${monthNames[now.getMonth()]} ${now.getFullYear()}`,
       text: text
     }).catch(err => {
-      if (err.name !== 'AbortError') {
-        openWhatsApp(text);
-      }
+      if (err.name !== 'AbortError') openWhatsApp(text);
     });
   } else {
     openWhatsApp(text);
@@ -1539,8 +1696,7 @@ window.shareMonthlyWhatsApp = function() {
 
 function openWhatsApp(text) {
   const encoded = encodeURIComponent(text);
-  const url = `https://wa.me/?text=${encoded}`;
-  window.open(url, '_blank');
+  window.open(`https://wa.me/?text=${encoded}`, '_blank');
   toast("✅ تم فتح واتساب");
 }
 
@@ -1564,27 +1720,26 @@ window.saveMonthlyPDF = function() {
   };
 
   html2pdf().set(opt).from(report).save().then(() => {
-    toast("✅ تم حفظ PDF بنجاح");
+    toast("✅ تم حفظ PDF");
   }).catch(err => {
     console.error(err);
-    toast("❌ حدث خطأ في إنشاء PDF");
+    toast("❌ خطأ في إنشاء PDF");
   });
 };
 
-// ============ سجل النشاط ============
 window.showActivity = function() {
   localStorage.setItem("lastSeenActivity", Date.now());
   const actionText = {
     add: "أضاف", edit: "عدّل", delete: "حذف",
     cancel: "ألغى", restore: "استرجع",
     done: "أنهى شراء", undo: "تراجع عن",
-    archive: "أرشف"
+    archive: "أرشف", unarchive: "استرجع من الأرشيف"
   };
   const actionIcon = {
     add: "➕", edit: "✏️", delete: "🗑️",
     cancel: "⏸️", restore: "♻️",
     done: "✅", undo: "↩️",
-    archive: "📦"
+    archive: "📦", unarchive: "📂"
   };
 
   const list = activities.length === 0
@@ -1632,7 +1787,6 @@ function updateNotifBadge() {
   }
 }
 
-// ========== الكتابة بالصوت ==========
 let recognition = null;
 let activeVoiceInput = null;
 
