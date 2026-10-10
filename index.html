@@ -163,7 +163,6 @@
   }
   .monthly-big-btn:active { transform: scale(0.98); }
 
-  /* ✅ زر إنهاء اليوم */
   .end-day-btn {
     width: 100%; padding: 14px; margin-bottom: 16px;
     border: 2px dashed #B87B6E; border-radius: 14px;
@@ -177,7 +176,6 @@
   .end-day-btn:active { transform: scale(0.98); }
   .end-day-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* ✅ شريط اليوم */
   .today-bar {
     display: flex; align-items: center; gap: 8px;
     padding: 12px 14px; margin-bottom: 12px;
@@ -605,7 +603,7 @@
     <div class="summary-card">
       <div class="summary-row">
         <div>
-          <div class="summary-label">💰 إجمالي المشتريات</div>
+          <div class="summary-label">💰 إجمالي مشتريات اليوم</div>
           <div class="summary-value"><span id="totalPrice">0.00</span> <small>$</small></div>
         </div>
         <div style="font-size: 40px; opacity: 0.4;">🛒</div>
@@ -618,7 +616,7 @@
       </div>
       <div class="summary-stats">
         <div class="summary-stat">
-          <div class="summary-stat-label">متبقية</div>
+          <div class="summary-stat-label">🛒 نشطة</div>
           <div class="summary-stat-value" id="totalItems">0</div>
         </div>
         <div class="summary-stat">
@@ -636,10 +634,8 @@
       📊 عرض السجل الشهري
     </button>
 
-    <!-- ✅ شريط اليوم -->
     <div class="today-bar" id="todayBar"></div>
 
-    <!-- ✅ زر إنهاء اليوم -->
     <button class="end-day-btn" id="endDayBtn" onclick="endDay()"
             data-tooltip="📦 إخفاء مواد اليوم من القائمة (تبقى في السجل الشهري)">
       📦 إنهاء اليوم (أرشفة)
@@ -728,10 +724,27 @@ if (savedUser) {
   document.getElementById("usernameInput").value = savedUser;
 }
 
+// ✅ شريط اليوم مع إجمالي اليوم
 function renderTodayBar() {
   const bar = document.getElementById("todayBar");
   if (!bar) return;
-  bar.innerHTML = `<span class="today-label">اليوم</span> 📅 ${formatFullDate(new Date())}`;
+
+  const today = new Date();
+  const todayItems = items.filter(i => {
+    if (!i.createdAt || i.status === "cancelled") return false;
+    return isSameDay(i.createdAt.toDate(), today);
+  });
+
+  const total = todayItems.reduce((s, i) =>
+    s + ((parseFloat(i.weight) || 0) * (parseFloat(i.price) || 0)), 0);
+
+  bar.innerHTML = `
+    <span class="today-label">اليوم</span>
+    📅 ${formatFullDate(new Date())}
+    <span style="margin-right:auto; color:#B87B3A; font-size:14px;">
+      💰 ${total.toFixed(2)} $
+    </span>
+  `;
 }
 
 function listenItems() {
@@ -767,7 +780,6 @@ window.renderItems = function() {
   const list = document.getElementById("itemsList");
   let filtered = items;
 
-  // ✅ استبعاد المؤرشفة من القائمة الرئيسية
   filtered = filtered.filter(i => i.status !== "archived");
   if (search) filtered = filtered.filter(i => (i.name || "").toLowerCase().includes(search));
 
@@ -887,19 +899,35 @@ function buildItemCard(item) {
   `;
 }
 
+// ✅ الإحصائيات = مشتريات اليوم كاملة (نشط + تم + مؤرشف)
 function updateSummary() {
-  const active = items.filter(i => i.status !== "cancelled" && i.status !== "done" && i.status !== "archived");
-  const done = items.filter(i => i.status === "done");
-  const cancelled = items.filter(i => i.status === "cancelled");
+  const today = new Date();
 
-  const totalWeight = active.reduce((s, i) => s + (parseFloat(i.weight) || 0), 0);
-  const activePrice = active.reduce((s, i) => s + ((parseFloat(i.weight) || 0) * (parseFloat(i.price) || 0)), 0);
+  // كل مواد اليوم (باستثناء الملغاة)
+  const todayAll = items.filter(i => {
+    if (!i.createdAt) return false;
+    if (i.status === "cancelled") return false;
+    return isSameDay(i.createdAt.toDate(), today);
+  });
 
-  document.getElementById("totalWeight").textContent = totalWeight.toFixed(1);
-  document.getElementById("totalPrice").textContent = activePrice.toFixed(2);
-  document.getElementById("totalItems").textContent = active.length;
-  document.getElementById("doneItems").textContent = done.length;
-  document.getElementById("cancelledItems").textContent = cancelled.length;
+  const todayActive = todayAll.filter(i => i.status === "active");
+  const todayDone = todayAll.filter(i => i.status === "done");
+  const todayCancelled = items.filter(i =>
+    i.createdAt && isSameDay(i.createdAt.toDate(), today) && i.status === "cancelled"
+  );
+
+  // ✅ الإجمالي = كل مشتريات اليوم (نشط + تم + مؤرشف)
+  const todayWeight = todayAll.reduce((s, i) => s + (parseFloat(i.weight) || 0), 0);
+  const todayPrice = todayAll.reduce((s, i) => s + ((parseFloat(i.weight) || 0) * (parseFloat(i.price) || 0)), 0);
+
+  document.getElementById("totalWeight").textContent = todayWeight.toFixed(1);
+  document.getElementById("totalPrice").textContent = todayPrice.toFixed(2);
+  document.getElementById("totalItems").textContent = todayActive.length;
+  document.getElementById("doneItems").textContent = todayDone.length;
+  document.getElementById("cancelledItems").textContent = todayCancelled.length;
+
+  // ✅ تحديث شريط اليوم أيضاً
+  renderTodayBar();
 }
 
 window.openItemSheet = function(id = null) {
@@ -1245,7 +1273,6 @@ window.playAudio = function(id) {
 window.endDay = async function() {
   const today = new Date();
 
-  // كل مواد اليوم غير المؤرشفة
   const todayItems = items.filter(i => {
     if (!i.createdAt || i.status === "archived") return false;
     return isSameDay(i.createdAt.toDate(), today);
@@ -1284,7 +1311,6 @@ window.endDay = async function() {
   }
 };
 
-// ✅ استرجاع كل المؤرشفة
 window.restoreArchived = async function() {
   const archived = items.filter(i => i.status === "archived");
   if (archived.length === 0) { toast("لا توجد مواد مؤرشفة"); return; }
@@ -1343,7 +1369,6 @@ window.showMonthlyReport = function() {
       const t = w * p;
       dayTotal += t;
 
-      // ✅ منطق الأرشفة
       const isArchived = item.status === "archived";
       const effectiveStatus = isArchived ? (item.previousStatus || "active") : item.status;
       const isCancelled = effectiveStatus === "cancelled";
