@@ -148,7 +148,6 @@
   }
   .monthly-big-btn:active { transform: scale(0.98); }
 
-  /* ✅ أزرار إضافية */
   .extra-btns {
     display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
     margin-bottom: 16px;
@@ -171,6 +170,11 @@
   .extra-btn.missing-btn {
     background: #FFF3D6; color: #8B6914;
     border: 2px dashed #D4A55C;
+  }
+  .extra-btn.tools-btn {
+    grid-column: 1 / -1;
+    background: #F5E0DC; color: #8A4238;
+    border: 2px dashed #B87B6E;
   }
 
   .end-day-btn {
@@ -275,7 +279,6 @@
   .item-card.cancelled .action-btn.edit { color: #A8C4B5; border-color: #3A5A4A; }
   .item-card.cancelled .item-actions { border-top-color: #444; }
 
-  /* ✅ بطاقة المؤرشفة */
   .item-card.archived {
     background: #F0F5F8; border: 2px dashed #4A6D5F;
   }
@@ -284,10 +287,10 @@
   .item-card.archived .item-meta .item-badge { color: #5A7A72; }
   .item-card.archived .item-badge { background: #D8E5EA; color: #4A6D5F; }
 
-  /* ⚠️ مادة ناقصة البيانات */
   .item-card.missing-data {
     border: 2px solid var(--warning);
     background: #FFFCF5;
+    position: relative;
   }
   .item-card.missing-data::before {
     content: "⚠️ بيانات ناقصة";
@@ -584,6 +587,68 @@
   .archive-stat-label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
   .archive-stat-value { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
 
+  /* ============ 🔧 أداة التشخيص ============ */
+  .diag-day-group {
+    background: var(--card); border-radius: 14px;
+    padding: 12px; margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+  .diag-day-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border);
+    font-weight: 700; font-size: 14px; color: var(--primary-dark);
+  }
+  .diag-day-total {
+    font-size: 14px; color: #B87B3A; font-weight: 700;
+    background: #FFF3D6; padding: 3px 10px; border-radius: 8px;
+  }
+  .diag-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; gap: 8px;
+    border-bottom: 1px solid #F5F1EA;
+    font-size: 13px;
+  }
+  .diag-item:last-child { border-bottom: none; }
+  .diag-item-info { flex: 1; min-width: 0; }
+  .diag-item-name { font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .diag-item-meta { font-size: 11px; color: var(--text-light); }
+  .diag-item-actions { display: flex; gap: 4px; }
+  .diag-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .diag-btn:active { transform: scale(0.9); }
+  .diag-btn.del { color: var(--danger); border-color: #F0D5CF; }
+  .diag-btn.move { color: var(--primary-dark); border-color: #D5E3DC; }
+  .diag-btn.edit { color: var(--primary-dark); border-color: #D5E3DC; }
+
+  .diag-warning {
+    background: #FFF3D6; border: 1px dashed #D4A55C;
+    border-radius: 12px; padding: 12px; margin-bottom: 12px;
+    font-size: 13px; color: #8B6914; line-height: 1.6;
+  }
+  .diag-danger-btn {
+    width: 100%; padding: 12px; margin-top: 10px;
+    border: 2px solid var(--danger); border-radius: 12px;
+    background: #FFF5F3; color: var(--danger);
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    cursor: pointer;
+  }
+  .diag-danger-btn:active { transform: scale(0.98); }
+
+  .dup-item {
+    background: #FFF5F3; border: 1px solid #F0D5CF;
+    border-radius: 10px; padding: 10px; margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .dup-item-name { font-weight: 700; color: var(--danger); margin-bottom: 4px; }
+  .dup-item-days { font-size: 11px; color: var(--text-light); }
+
   @media print {
     body * { visibility: hidden; }
     #printableReport, #printableReport * { visibility: visible; }
@@ -592,20 +657,6 @@
       width: 100%; background: white; padding: 20px;
     }
     .sheet-close, .monthly-actions { display: none !important; }
-    .modal-overlay {
-      position: static !important;
-      background: white !important;
-      backdrop-filter: none !important;
-    }
-    .sheet {
-      max-height: none !important;
-      border-radius: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      background: white !important;
-    }
-    .monthly-summary { box-shadow: none !important; }
-    .monthly-day { box-shadow: none !important; page-break-inside: avoid; }
   }
 </style>
 </head>
@@ -620,10 +671,10 @@
       <label class="input-label">اسمك</label>
       <div class="input-with-mic">
         <input type="text" id="usernameInput" class="input-field" placeholder="مثال: حسن" autocomplete="off">
-        <button type="button" class="mic-btn" id="mic_usernameInput" onclick="startVoiceInput('usernameInput')" data-tooltip="🎤 انطق اسمك للكتابة بالصوت">🎤</button>
+        <button type="button" class="mic-btn" id="mic_usernameInput" onclick="startVoiceInput('usernameInput')">🎤</button>
       </div>
     </div>
-    <button class="btn" onclick="login()" data-tooltip="اضغط للدخول إلى التطبيق">دخول</button>
+    <button class="btn" onclick="login()">دخول</button>
   </div>
 </div>
 
@@ -631,12 +682,12 @@
   <div class="app-header">
     <div class="header-title">بيت <span id="usernameDisplay"></span></div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="showMonthlyReport()" data-tooltip="📊 عرض السجل الشهري للمشتريات">📊</button>
-      <button class="icon-btn" onclick="showActivity()" data-tooltip="🔔 سجل التعديلات والنشاطات">
+      <button class="icon-btn" onclick="showMonthlyReport()" data-tooltip="📊 السجل الشهري">📊</button>
+      <button class="icon-btn" onclick="showActivity()" data-tooltip="🔔 سجل النشاط">
         🔔
         <span id="notifDot" class="notif-dot hidden">0</span>
       </button>
-      <button class="icon-btn" onclick="logout()" data-tooltip="🚪 تسجيل الخروج">🚪</button>
+      <button class="icon-btn" onclick="logout()" data-tooltip="🚪 خروج">🚪</button>
     </div>
   </div>
 
@@ -671,24 +722,23 @@
       </div>
     </div>
 
-    <button class="monthly-big-btn" onclick="showMonthlyReport()" data-tooltip="📊 عرض تفاصيل جميع مشترياتك هذا الشهر">
-      📊 عرض السجل الشهري
-    </button>
+    <button class="monthly-big-btn" onclick="showMonthlyReport()">📊 عرض السجل الشهري</button>
 
     <div class="today-bar" id="todayBar"></div>
 
-    <!-- ✅ أزرار إضافية: الأرشيف + الناقصة -->
     <div class="extra-btns">
-      <button class="extra-btn archive-btn" onclick="showArchive()" data-tooltip="📂 عرض المواد المؤرشفة وتعديلها">
+      <button class="extra-btn archive-btn" onclick="showArchive()">
         📂 الأرشيف <span id="archiveCount" style="opacity:0.7;"></span>
       </button>
-      <button class="extra-btn missing-btn" onclick="showMissingData()" data-tooltip="⚠️ المواد التي ينقصها وزن أو سعر">
+      <button class="extra-btn missing-btn" onclick="showMissingData()">
         ⚠️ ناقصة <span id="missingCount" style="opacity:0.7;"></span>
+      </button>
+      <button class="extra-btn tools-btn" onclick="showDiagnostics()">
+        🔧 أداة التشخيص والإصلاح
       </button>
     </div>
 
-    <button class="end-day-btn" id="endDayBtn" onclick="endDay()"
-            data-tooltip="📦 إخفاء مواد اليوم من القائمة (تبقى في السجل الشهري)">
+    <button class="end-day-btn" id="endDayBtn" onclick="endDay()">
       📦 إنهاء اليوم (أرشفة)
     </button>
 
@@ -700,7 +750,7 @@
     <div id="itemsList"></div>
   </div>
 
-  <button class="fab" onclick="openItemSheet()" data-tooltip="➕ إضافة مادة جديدة إلى القائمة">
+  <button class="fab" onclick="openItemSheet()">
     <span>＋</span> إضافة مادة
   </button>
 </div>
@@ -743,7 +793,6 @@ function isSameDay(d1, d2) {
          d1.getDate() === d2.getDate();
 }
 
-// ✅ دالة مساعدة
 function isItemCancelled(item) {
   const effectiveStatus = item.status === "archived"
     ? (item.previousStatus || "active")
@@ -755,7 +804,6 @@ function itemTotal(item) {
   return (parseFloat(item.weight) || 0) * (parseFloat(item.price) || 0);
 }
 
-// ✅ هل المادة ناقصة بيانات؟
 function isItemMissingData(item) {
   const w = parseFloat(item.weight) || 0;
   const p = parseFloat(item.price);
@@ -770,6 +818,10 @@ let pendingImage = null;
 let pendingAudio = null;
 let sheetOpenedAt = 0;
 let lastRenderedDay = new Date().toDateString();
+
+// ✅ تعريف db عالمياً للأدوات
+window._db = db;
+window._items = () => items;
 
 window.login = function() {
   const val = document.getElementById("usernameInput").value.trim();
@@ -801,7 +853,7 @@ function renderTodayBar() {
 
   const today = new Date();
   const todayItems = items.filter(i => {
-    if (!i.createdAt) return false;
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") return false;
     if (isItemCancelled(i)) return false;
     return isSameDay(i.createdAt.toDate(), today);
   });
@@ -846,7 +898,6 @@ async function logActivity(action, itemName, details = "") {
   } catch(e) { console.error(e); }
 }
 
-// ✅ تحديث عدادات الأرشيف والناقصة
 function updateCounts() {
   const archivedCount = items.filter(i => i.status === "archived").length;
   const missingCount = items.filter(i => isItemMissingData(i) && i.status !== "archived" && i.status !== "cancelled").length;
@@ -912,7 +963,7 @@ function buildItemCard(item, options = {}) {
   const updatedBy = item.updatedBy;
   const updatedAt = item.updatedAt ? timeAgo(item.updatedAt.toDate()) : null;
   const imageHtml = item.image ? `<img src="${item.image}" class="media-thumb" onclick="viewImage('${item.id}')">` : "";
-  const audioHtml = item.audio ? `<button class="audio-btn" onclick="playAudio('${item.id}')" data-tooltip="🎵 تشغيل التسجيل الصوتي">🎵 تشغيل</button>` : "";
+  const audioHtml = item.audio ? `<button class="audio-btn" onclick="playAudio('${item.id}')">🎵 تشغيل</button>` : "";
   const mediaHtml = (imageHtml || audioHtml) ? `<div class="item-media">${imageHtml}${audioHtml}</div>` : "";
 
   const weight = parseFloat(item.weight) || 0;
@@ -934,29 +985,28 @@ function buildItemCard(item, options = {}) {
 
   let actionButtons = "";
   if (showUnarchive) {
-    // مواد الأرشيف
     actionButtons = `
-      <button class="action-btn unarchive" onclick="unarchiveItem('${item.id}')" data-tooltip="♻️ استرجاع للقائمة الرئيسية">♻️ استرجاع</button>
-      <button class="action-btn edit" onclick="openItemSheet('${item.id}')" data-tooltip="✏️ تعديل البيانات">✏️ تعديل</button>
-      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف نهائي">🗑️ حذف</button>
+      <button class="action-btn unarchive" onclick="unarchiveItem('${item.id}')">♻️ استرجاع</button>
+      <button class="action-btn edit" onclick="openItemSheet('${item.id}')">✏️ تعديل</button>
+      <button class="action-btn delete" onclick="deleteItem('${item.id}')">🗑️ حذف</button>
     `;
   } else if (isCancelled) {
     actionButtons = `
-      <button class="action-btn restore" onclick="toggleCancel('${item.id}')" data-tooltip="♻️ استرجاع">♻️ استرجاع</button>
-      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف">🗑️ حذف</button>
+      <button class="action-btn restore" onclick="toggleCancel('${item.id}')">♻️ استرجاع</button>
+      <button class="action-btn delete" onclick="deleteItem('${item.id}')">🗑️ حذف</button>
     `;
   } else if (isDone) {
     actionButtons = `
-      <button class="action-btn undo" onclick="toggleDone('${item.id}')" data-tooltip="↩️ تراجع">↩️ تراجع</button>
-      <button class="action-btn edit" onclick="openItemSheet('${item.id}')" data-tooltip="✏️ تعديل">✏️ تعديل</button>
-      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف">🗑️ حذف</button>
+      <button class="action-btn undo" onclick="toggleDone('${item.id}')">↩️ تراجع</button>
+      <button class="action-btn edit" onclick="openItemSheet('${item.id}')">✏️ تعديل</button>
+      <button class="action-btn delete" onclick="deleteItem('${item.id}')">🗑️ حذف</button>
     `;
   } else {
     actionButtons = `
-      <button class="action-btn done" onclick="toggleDone('${item.id}')" data-tooltip="✅ تم">✅ تم</button>
-      <button class="action-btn cancel" onclick="toggleCancel('${item.id}')" data-tooltip="⏸️ إلغاء">⏸️ إلغاء</button>
-      <button class="action-btn edit" onclick="openItemSheet('${item.id}')" data-tooltip="✏️ تعديل">✏️</button>
-      <button class="action-btn delete" onclick="deleteItem('${item.id}')" data-tooltip="🗑️ حذف">🗑️</button>
+      <button class="action-btn done" onclick="toggleDone('${item.id}')">✅ تم</button>
+      <button class="action-btn cancel" onclick="toggleCancel('${item.id}')">⏸️ إلغاء</button>
+      <button class="action-btn edit" onclick="openItemSheet('${item.id}')">✏️</button>
+      <button class="action-btn delete" onclick="deleteItem('${item.id}')">🗑️</button>
     `;
   }
 
@@ -999,7 +1049,7 @@ function updateSummary() {
   const today = new Date();
 
   const todayAll = items.filter(i => {
-    if (!i.createdAt) return false;
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") return false;
     if (isItemCancelled(i)) return false;
     return isSameDay(i.createdAt.toDate(), today);
   });
@@ -1022,7 +1072,6 @@ function updateSummary() {
   renderTodayBar();
 }
 
-// ============ 🕛 منتصف الليل ============
 function startMidnightWatcher() {
   setInterval(checkDayChange, 60 * 1000);
   document.addEventListener("visibilitychange", () => {
@@ -1046,7 +1095,6 @@ window.showArchive = function() {
   const archived = items.filter(i => i.status === "archived")
     .sort((a, b) => (b.archivedAt?.toDate?.() || 0) - (a.archivedAt?.toDate?.() || 0));
 
-  // إحصائيات
   const totalValue = archived.reduce((s, i) => s + itemTotal(i), 0);
   const withMissing = archived.filter(i => isItemMissingData(i)).length;
 
@@ -1064,7 +1112,7 @@ window.showArchive = function() {
         <div class="sheet-handle"></div>
         <div class="sheet-title">
           📂 الأرشيف (${archived.length})
-          <button class="sheet-close" onclick="closeArchive()" data-tooltip="✕ إغلاق">✕</button>
+          <button class="sheet-close" onclick="closeArchive()">✕</button>
         </div>
 
         ${archived.length > 0 ? `
@@ -1103,7 +1151,6 @@ window.unarchiveItem = async function(id) {
     });
     await logActivity("unarchive", item.name);
     toast("♻️ تم الاسترجاع للقائمة");
-    // إعادة فتح الأرشيف بعد التحديث
     setTimeout(() => {
       closeArchive();
       setTimeout(showArchive, 300);
@@ -1133,7 +1180,7 @@ window.showMissingData = function() {
         <div class="sheet-handle"></div>
         <div class="sheet-title">
           ⚠️ مواد ناقصة (${missing.length})
-          <button class="sheet-close" onclick="closeMissingData()" data-tooltip="✕ إغلاق">✕</button>
+          <button class="sheet-close" onclick="closeMissingData()">✕</button>
         </div>
 
         ${missing.length > 0 ? `
@@ -1155,6 +1202,240 @@ window.closeMissingData = function() {
   document.querySelector(".modal-overlay")?.remove();
 };
 
+// ============ 🔧 أداة التشخيص ============
+window.showDiagnostics = function() {
+  // تجميع المواد حسب اليوم
+  const byDay = {};
+  items.forEach(i => {
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") {
+      const key = "unknown";
+      if (!byDay[key]) byDay[key] = [];
+      byDay[key].push(i);
+      return;
+    }
+    const d = i.createdAt.toDate();
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (!byDay[key]) byDay[key] = [];
+    byDay[key].push(i);
+  });
+
+  const sortedKeys = Object.keys(byDay).sort((a, b) => b.localeCompare(a));
+
+  // كشف التكرار
+  const duplicates = {};
+  items.forEach(i => {
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") return;
+    const key = `${i.name}|${i.weight}|${i.price}`;
+    if (!duplicates[key]) duplicates[key] = [];
+    duplicates[key].push(i);
+  });
+  const dupGroups = Object.entries(duplicates)
+    .filter(([_, group]) => group.length > 1)
+    .map(([key, group]) => ({ key, group }));
+
+  // بناء HTML
+  let daysHtml = "";
+  sortedKeys.forEach(key => {
+    if (key === "unknown") {
+      daysHtml += `
+        <div class="diag-day-group">
+          <div class="diag-day-header">
+            <span>⚠️ بدون تاريخ</span>
+            <span class="diag-day-total">${byDay[key].length} مادة</span>
+          </div>
+          ${byDay[key].map(item => diagItemHtml(item)).join("")}
+        </div>
+      `;
+      return;
+    }
+    const [y, m, d] = key.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const dayName = AR_DAYS[dateObj.getDay()];
+    const dayItems = byDay[key];
+    const validTotal = dayItems
+      .filter(i => !isItemCancelled(i))
+      .reduce((s, i) => s + itemTotal(i), 0);
+
+    daysHtml += `
+      <div class="diag-day-group">
+        <div class="diag-day-header">
+          <span>📅 ${dayName} ${d} ${AR_MONTHS[m-1]} ${y}</span>
+          <span class="diag-day-total">${validTotal.toFixed(2)} $</span>
+        </div>
+        ${dayItems.map(item => diagItemHtml(item)).join("")}
+      </div>
+    `;
+  });
+
+  const dupHtml = dupGroups.length === 0
+    ? `<div style="text-align:center; padding:20px; color:var(--text-light); font-size:13px;">
+         ✨ لا توجد مواد مكررة
+       </div>`
+    : dupGroups.map(({ key, group }) => {
+        const [name, weight, price] = key.split("|");
+        const days = group.map(i => {
+          const d = i.createdAt?.toDate?.();
+          return d ? `${AR_DAYS[d.getDay()]} ${d.getDate()}` : "?";
+        }).join(" · ");
+        return `
+          <div class="dup-item">
+            <div class="dup-item-name">⚠️ ${escapeHtml(name)}</div>
+            <div class="dup-item-days">📅 ${days} (${group.length} نسخة) · وزن: ${weight} · سعر: ${price}</div>
+          </div>
+        `;
+      }).join("");
+
+  const html = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeDiagnostics()">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">
+          🔧 أداة التشخيص والإصلاح
+          <button class="sheet-close" onclick="closeDiagnostics()">✕</button>
+        </div>
+
+        <div class="diag-warning">
+          <b>📊 إجمالي المواد:</b> ${items.length}<br>
+          <b>📅 عدد الأيام:</b> ${sortedKeys.length}<br>
+          <b>⚠️ مواد مكررة:</b> ${dupGroups.length} مجموعة
+        </div>
+
+        <div style="font-size:16px; font-weight:700; margin:16px 0 10px; color:var(--primary-dark);">
+          🔍 المواد حسب اليوم
+        </div>
+
+        ${daysHtml}
+
+        <div style="font-size:16px; font-weight:700; margin:24px 0 10px; color:var(--danger);">
+          🔁 كشف التكرار
+        </div>
+
+        ${dupHtml}
+
+        <button class="diag-danger-btn" onclick="deleteAllToday()" style="margin-top:20px;">
+          🗑️ حذف كل مواد اليوم (${new Date().toLocaleDateString('ar')})
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", html);
+};
+
+function diagItemHtml(item) {
+  const d = item.createdAt?.toDate?.();
+  const time = d ? `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : "—";
+  const statusIcon = item.status === "archived" ? "📦" : 
+                     item.status === "cancelled" ? "⏸️" : 
+                     item.status === "done" ? "✅" : "🛒";
+  const w = parseFloat(item.weight) || 0;
+  const p = parseFloat(item.price) || 0;
+  const total = w * p;
+
+  return `
+    <div class="diag-item">
+      <div class="diag-item-info">
+        <div class="diag-item-name">${statusIcon} ${escapeHtml(item.name)}</div>
+        <div class="diag-item-meta">
+          🕒 ${time} · ⚖️ ${w} · 💰 ${p} · = ${total.toFixed(2)}$
+        </div>
+      </div>
+      <div class="diag-item-actions">
+        <button class="diag-btn edit" onclick="diagEdit('${item.id}')" title="تعديل">✏️</button>
+        <button class="diag-btn move" onclick="diagMove('${item.id}')" title="نقل ليوم آخر">📅</button>
+        <button class="diag-btn del" onclick="diagDelete('${item.id}')" title="حذف">🗑️</button>
+      </div>
+    </div>
+  `;
+}
+
+window.closeDiagnostics = function() {
+  document.querySelector(".modal-overlay")?.remove();
+};
+
+window.diagEdit = function(id) {
+  closeDiagnostics();
+  setTimeout(() => openItemSheet(id), 300);
+};
+
+window.diagDelete = async function(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm(`حذف "${item.name}" نهائياً؟`)) return;
+  try {
+    await deleteDoc(doc(db, "items", id));
+    await logActivity("delete", item.name);
+    toast("🗑️ تم الحذف");
+    closeDiagnostics();
+    setTimeout(showDiagnostics, 500);
+  } catch(e) { toast("خطأ: " + e.message); }
+};
+
+window.diagMove = async function(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  const currentDate = item.createdAt?.toDate?.();
+  const currentStr = currentDate
+    ? `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}`
+    : "";
+
+  const newDateStr = prompt(
+    "أدخل التاريخ الجديد بالصيغة YYYY-MM-DD\n\n" +
+    "أمثلة:\n" +
+    "• 2026-10-08 (الخميس)\n" +
+    "• 2026-10-09 (الجمعة)\n" +
+    "• 2026-10-10 (السبت)",
+    currentStr
+  );
+
+  if (!newDateStr) return;
+
+  const match = newDateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) { toast("صيغة خاطئة، استخدم YYYY-MM-DD"); return; }
+
+  const [_, y, m, d] = match.map(Number);
+  const newDate = new Date(y, m - 1, d, 12, 0, 0);
+
+  if (isNaN(newDate.getTime())) { toast("تاريخ غير صالح"); return; }
+
+  try {
+    const { Timestamp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await updateDoc(doc(db, "items", id), {
+      createdAt: Timestamp.fromDate(newDate),
+      updatedBy: username,
+      updatedAt: serverTimestamp()
+    });
+    await logActivity("edit", item.name, `نقل إلى ${newDateStr}`);
+    toast("✅ تم نقل المادة");
+    closeDiagnostics();
+    setTimeout(showDiagnostics, 500);
+  } catch(e) { toast("خطأ: " + e.message); }
+};
+
+window.deleteAllToday = async function() {
+  const today = new Date();
+  const todayItems = items.filter(i => {
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") return false;
+    return isSameDay(i.createdAt.toDate(), today);
+  });
+
+  if (todayItems.length === 0) {
+    toast("لا توجد مواد اليوم");
+    return;
+  }
+
+  if (!confirm(`⚠️ حذف ${todayItems.length} مادة من اليوم نهائياً؟\n\nهذا الإجراء لا يمكن التراجع عنه!`)) return;
+
+  try {
+    await Promise.all(todayItems.map(item => deleteDoc(doc(db, "items", item.id))));
+    await logActivity("delete", `${todayItems.length} مادة`, "حذف مواد اليوم");
+    toast(`🗑️ تم حذف ${todayItems.length} مادة`);
+    closeDiagnostics();
+  } catch(e) { toast("خطأ: " + e.message); }
+};
+
+// ============ فتح شيت المادة ============
 window.openItemSheet = function(id = null) {
   editingId = id;
   pendingImage = null;
@@ -1187,52 +1468,51 @@ window.openItemSheet = function(id = null) {
         <div class="sheet-handle"></div>
         <div class="sheet-title">
           ${title}
-          <button class="sheet-close" onclick="closeSheetSafely()" data-tooltip="✕ إغلاق">✕</button>
+          <button class="sheet-close" onclick="closeSheetSafely()">✕</button>
         </div>
 
         <div class="input-group">
           <label class="input-label">اسم المادة</label>
           <div class="input-with-mic">
             <input type="text" id="itemName" class="input-field" placeholder="مثال: أرز" value="${item ? escapeHtml(item.name) : ''}">
-            <button type="button" class="mic-btn" id="mic_itemName" onclick="startVoiceInput('itemName')" data-tooltip="🎤 انطق اسم المادة">🎤</button>
+            <button type="button" class="mic-btn" id="mic_itemName" onclick="startVoiceInput('itemName')">🎤</button>
           </div>
         </div>
 
-        <div class="form-row-3">
+        <div class="form-row">
           <div class="input-group">
             <label class="input-label">الوزن / الكمية</label>
-            <input type="number" id="itemWeight" class="input-field" placeholder="0" step="0.1" value="${item ? (item.weight || '') : ''}" oninput="updateItemTotal()" data-tooltip="مثال: 2 كغ أو 5 حبات">
+            <input type="number" id="itemWeight" class="input-field" placeholder="0" step="0.1" value="${item ? (item.weight || '') : ''}" oninput="updateItemTotal()">
           </div>
           <div class="input-group">
             <label class="input-label">الوحدة</label>
-            <select id="itemUnit" class="input-field" data-tooltip="اختر وحدة القياس">
-              ${unitOptions}
-            </select>
-          </div>
-          <div class="input-group price-field">
-            <label class="input-label">💰 سعر الوحدة ($)</label>
-            <input type="number" id="itemPrice" class="input-field" placeholder="0.00" step="0.01" value="${item && item.price !== undefined && item.price !== null ? item.price : ''}" oninput="updateItemTotal()" data-tooltip="سعر الكيلو أو الحبة الواحدة">
+            <select id="itemUnit" class="input-field">${unitOptions}</select>
           </div>
         </div>
 
-        <div class="total-preview" id="totalPreview">
-          <span class="total-preview-label">💰 المجموع (السعر × الكمية):</span>
+        <div class="input-group">
+          <label class="input-label">💰 سعر الوحدة ($)</label>
+          <input type="number" id="itemPrice" class="input-field" placeholder="0.00" step="0.01" value="${item && item.price !== undefined && item.price !== null ? item.price : ''}" oninput="updateItemTotal()">
+        </div>
+
+        <div class="total-preview">
+          <span class="total-preview-label">💰 المجموع:</span>
           <span class="total-preview-value"><span id="itemTotalDisplay">0.00</span> $</span>
         </div>
 
         <div class="input-group" style="margin-top: 16px;">
           <label class="input-label">إضافة وسائط</label>
           <div class="media-picker">
-            <button type="button" class="media-pick-btn" onclick="pickCamera()" data-tooltip="📷 الكاميرا">
+            <button type="button" class="media-pick-btn" onclick="pickCamera()">
               <span class="emoji">📷</span><span>الكاميرا</span>
             </button>
-            <button type="button" class="media-pick-btn" onclick="pickGallery()" data-tooltip="🖼️ المعرض">
+            <button type="button" class="media-pick-btn" onclick="pickGallery()">
               <span class="emoji">🖼️</span><span>المعرض</span>
             </button>
-            <button type="button" class="media-pick-btn" onclick="pickAudio()" data-tooltip="🎤 ملف صوتي">
-              <span class="emoji">🎤</span><span>ملف صوتي</span>
+            <button type="button" class="media-pick-btn" onclick="pickAudio()">
+              <span class="emoji">🎤</span><span>صوتي</span>
             </button>
-            <button type="button" class="media-pick-btn" onclick="removeMedia()" data-tooltip="✕ إزالة">
+            <button type="button" class="media-pick-btn" onclick="removeMedia()">
               <span class="emoji">✕</span><span>إزالة</span>
             </button>
           </div>
@@ -1240,7 +1520,7 @@ window.openItemSheet = function(id = null) {
 
         <div id="mediaPreview" class="preview-wrap"></div>
 
-        <button class="btn" onclick="saveItem()" style="margin-top: 20px;" data-tooltip="${item ? '💾 حفظ التعديلات' : '＋ إضافة المادة'}">
+        <button class="btn" onclick="saveItem()" style="margin-top: 20px;">
           ${item ? "💾 حفظ التعديلات" : "＋ إضافة المادة"}
         </button>
       </div>
@@ -1526,7 +1806,7 @@ window.showMonthlyReport = function() {
     "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
   const monthItems = items.filter(i => {
-    if (!i.createdAt) return false;
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") return false;
     const d = i.createdAt.toDate();
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
@@ -1613,16 +1893,12 @@ window.showMonthlyReport = function() {
         <div class="sheet-handle"></div>
         <div class="sheet-title">
           📊 السجل الشهري
-          <button class="sheet-close" onclick="closeMonthlyReport()" data-tooltip="✕ إغلاق">✕</button>
+          <button class="sheet-close" onclick="closeMonthlyReport()">✕</button>
         </div>
 
         <div class="monthly-actions">
-          <button class="monthly-action-btn pdf" onclick="saveMonthlyPDF()" data-tooltip="📄 حفظ PDF">
-            📄 حفظ PDF
-          </button>
-          <button class="monthly-action-btn whatsapp" onclick="shareMonthlyWhatsApp()" data-tooltip="💬 واتساب">
-            💬 مشاركة واتساب
-          </button>
+          <button class="monthly-action-btn pdf" onclick="saveMonthlyPDF()">📄 حفظ PDF</button>
+          <button class="monthly-action-btn whatsapp" onclick="shareMonthlyWhatsApp()">💬 واتساب</button>
         </div>
 
         <div id="printableReport">
@@ -1760,7 +2036,7 @@ window.showActivity = function() {
         <div class="sheet-handle"></div>
         <div class="sheet-title">
           سجل التعديلات
-          <button class="sheet-close" onclick="closeActivity()" data-tooltip="✕ إغلاق">✕</button>
+          <button class="sheet-close" onclick="closeActivity()">✕</button>
         </div>
         ${list}
       </div>
