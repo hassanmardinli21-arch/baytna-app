@@ -587,7 +587,6 @@
   .archive-stat-label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
   .archive-stat-value { font-size: 18px; font-weight: 700; color: var(--primary-dark); }
 
-  /* ============ 🔧 أداة التشخيص ============ */
   .diag-day-group {
     background: var(--card); border-radius: 14px;
     padding: 12px; margin-bottom: 10px;
@@ -739,7 +738,7 @@
     </div>
 
     <button class="end-day-btn" id="endDayBtn" onclick="endDay()">
-      📦 إنهاء اليوم (أرشفة)
+      📦 إغلاق اليوم (أرشفة مواد اليوم السابقة)
     </button>
 
     <div class="search-wrap">
@@ -819,7 +818,6 @@ let pendingAudio = null;
 let sheetOpenedAt = 0;
 let lastRenderedDay = new Date().toDateString();
 
-// ✅ تعريف db عالمياً للأدوات
 window._db = db;
 window._items = () => items;
 
@@ -909,12 +907,23 @@ function updateCounts() {
   if (missingEl) missingEl.textContent = missingCount > 0 ? `(${missingCount})` : "";
 }
 
+// ✅ renderItems: يخفي تلقائياً التم والملغاة من الأيام السابقة
 window.renderItems = function() {
   const search = document.getElementById("searchInput").value.trim().toLowerCase();
   const list = document.getElementById("itemsList");
+  const today = new Date();
   let filtered = items;
 
+  // استبعاد المؤرشفة
   filtered = filtered.filter(i => i.status !== "archived");
+
+  // ✅ استبعاد (تم/ملغاة) من أيام سابقة — تبقى في السجل الشهري فقط
+  filtered = filtered.filter(i => {
+    if (i.status === "active") return true; // النشطة دائماً تظهر
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") return true;
+    return isSameDay(i.createdAt.toDate(), today);
+  });
+
   if (search) filtered = filtered.filter(i => (i.name || "").toLowerCase().includes(search));
 
   if (filtered.length === 0) {
@@ -935,12 +944,12 @@ window.renderItems = function() {
   activeItems.forEach(item => { html += buildItemCard(item); });
 
   if (doneItems.length > 0) {
-    html += `<div class="section-divider done-divider">✅ تم شراؤها (${doneItems.length})</div>`;
+    html += `<div class="section-divider done-divider">✅ تم شراؤها اليوم (${doneItems.length})</div>`;
     doneItems.forEach(item => { html += buildItemCard(item); });
   }
 
   if (cancelledItems.length > 0) {
-    html += `<div class="section-divider cancelled-divider">⏸️ المواد الملغاة (${cancelledItems.length})</div>`;
+    html += `<div class="section-divider cancelled-divider">⏸️ ملغاة اليوم (${cancelledItems.length})</div>`;
     cancelledItems.forEach(item => { html += buildItemCard(item); });
   }
 
@@ -1090,7 +1099,6 @@ function checkDayChange() {
   }
 }
 
-// ============ 📂 الأرشيف ============
 window.showArchive = function() {
   const archived = items.filter(i => i.status === "archived")
     .sort((a, b) => (b.archivedAt?.toDate?.() || 0) - (a.archivedAt?.toDate?.() || 0));
@@ -1158,7 +1166,6 @@ window.unarchiveItem = async function(id) {
   } catch(e) { toast("خطأ: " + e.message); }
 };
 
-// ============ ⚠️ المواد الناقصة ============
 window.showMissingData = function() {
   const missing = items.filter(i =>
     isItemMissingData(i) &&
@@ -1202,9 +1209,7 @@ window.closeMissingData = function() {
   document.querySelector(".modal-overlay")?.remove();
 };
 
-// ============ 🔧 أداة التشخيص ============
 window.showDiagnostics = function() {
-  // تجميع المواد حسب اليوم
   const byDay = {};
   items.forEach(i => {
     if (!i.createdAt || typeof i.createdAt.toDate !== "function") {
@@ -1221,7 +1226,6 @@ window.showDiagnostics = function() {
 
   const sortedKeys = Object.keys(byDay).sort((a, b) => b.localeCompare(a));
 
-  // كشف التكرار
   const duplicates = {};
   items.forEach(i => {
     if (!i.createdAt || typeof i.createdAt.toDate !== "function") return;
@@ -1233,7 +1237,6 @@ window.showDiagnostics = function() {
     .filter(([_, group]) => group.length > 1)
     .map(([key, group]) => ({ key, group }));
 
-  // بناء HTML
   let daysHtml = "";
   sortedKeys.forEach(key => {
     if (key === "unknown") {
@@ -1435,7 +1438,6 @@ window.deleteAllToday = async function() {
   } catch(e) { toast("خطأ: " + e.message); }
 };
 
-// ============ فتح شيت المادة ============
 window.openItemSheet = function(id = null) {
   editingId = id;
   pendingImage = null;
@@ -1756,31 +1758,47 @@ window.playAudio = function(id) {
   new Audio(item.audio).play();
 };
 
+// ✅ endDay: يؤرشف كل (تم/ملغاة) من الأيام السابقة + كل مواد اليوم
 window.endDay = async function() {
   const today = new Date();
 
-  const todayItems = items.filter(i => {
-    if (!i.createdAt || i.status === "archived") return false;
-    return isSameDay(i.createdAt.toDate(), today);
+  // ✅ نأرشف:
+  // 1) كل مواد اليوم (نشطة + تم + ملغاة)
+  // 2) كل المواد "تم" أو "ملغاة" من أيام سابقة (لتنظيف القائمة)
+  const toArchive = items.filter(i => {
+    if (i.status === "archived") return false;
+    if (!i.createdAt || typeof i.createdAt.toDate !== "function") return false;
+    
+    const itemDate = i.createdAt.toDate();
+    const isToday = isSameDay(itemDate, today);
+    
+    // مواد اليوم كلها تُؤرشف
+    if (isToday) return true;
+    
+    // مواد الأيام السابقة: فقط "تم" أو "ملغاة"
+    if (i.status === "done" || i.status === "cancelled") return true;
+    
+    // المواد "النشطة" من الأيام السابقة: نتركها (المستخدم لم يقرر بعد)
+    return false;
   });
 
-  if (todayItems.length === 0) {
-    toast("لا توجد مواد اليوم لأرشفتها");
+  if (toArchive.length === 0) {
+    toast("لا توجد مواد لإغلاقها");
     return;
   }
 
   const confirmed = confirm(
-    `📦 أرشفة ${todayItems.length} مادة من مواد اليوم؟\n\n` +
-    `• ستختفي من القائمة الرئيسية\n` +
-    `• ستبقى محفوظة في السجل الشهري\n` +
-    `• يمكن استرجاعها من زر "📂 الأرشيف"`
+    `📦 إغلاق اليوم:\n\n` +
+    `• سيتم أرشفة ${toArchive.length} مادة\n` +
+    `• سيبقى منها في السجل الشهري\n` +
+    `• يمكن استرجاعها من 📂 الأرشيف`
   );
   if (!confirmed) return;
 
   toast("⏳ جاري الأرشفة...");
 
   try {
-    await Promise.all(todayItems.map(item =>
+    await Promise.all(toArchive.map(item =>
       updateDoc(doc(db, "items", item.id), {
         status: "archived",
         previousStatus: item.status || "active",
@@ -1788,15 +1806,14 @@ window.endDay = async function() {
         archivedAt: serverTimestamp()
       })
     ));
-    await logActivity("archive", `${todayItems.length} مادة`);
-    toast(`✅ تم أرشفة ${todayItems.length} مادة`);
+    await logActivity("archive", `${toArchive.length} مادة`);
+    toast(`✅ تم إغلاق ${toArchive.length} مادة`);
   } catch (e) {
     console.error(e);
     toast("خطأ: " + e.message);
   }
 };
 
-// ============ 📊 السجل الشهري ============
 window.showMonthlyReport = function() {
   const now = new Date();
   const currentMonth = now.getMonth();
