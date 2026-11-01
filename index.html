@@ -37,12 +37,11 @@
   .header-title span { color: var(--primary); }
   .header-actions { display: flex; gap: 8px; }
   .icon-btn {
-    width: 44px; height: 44px; border-radius: 14px;
+    width: 42px; height: 42px; border-radius: 14px;
     background: var(--card); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; cursor: pointer; position: relative;
-    box-shadow: var(--shadow);
-    transition: all 0.2s;
+    font-size: 20px; cursor: pointer; position: relative;
+    box-shadow: var(--shadow); transition: all 0.2s;
   }
   .icon-btn:active { transform: scale(0.95); }
 
@@ -73,11 +72,11 @@
 
   .calc-fab {
     position: fixed; bottom: 24px; left: 24px;
-    width: 56px; height: 56px; border-radius: 50%;
+    width: 54px; height: 54px; border-radius: 50%;
     background: linear-gradient(135deg, #4A6D5F 0%, #2D3A3A 100%);
-    color: white; border: none; font-size: 26px;
+    color: white; border: none; font-size: 24px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 8px 24px rgba(45, 58, 58, 0.35);
+    box-shadow: 0 6px 20px rgba(45, 58, 58, 0.3);
     z-index: 90; transition: all 0.2s;
   }
   .calc-fab:active { transform: scale(0.92); }
@@ -107,7 +106,7 @@
   .calc-btn.equal { background: var(--primary); color: white; border: none; }
   .calc-btn.clear { background: #FFF5F3; color: var(--danger); border-color: #F0D5CF; }
 
-  /* النوافذ المنبثقة (Modals) */
+  /* النوافذ المنبثقة */
   .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(45, 58, 58, 0.5);
@@ -124,9 +123,9 @@
     display: flex; justify-content: space-between; align-items: center;
   }
   .sheet-close {
-    width: 34px; height: 34px; border-radius: 50%;
+    width: 32px; height: 32px; border-radius: 50%;
     background: var(--card); border: 1px solid var(--border);
-    font-size: 18px; cursor: pointer;
+    font-size: 16px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
   .month-picker-row {
@@ -151,12 +150,12 @@
 <body>
 
 <div id="homeScreen">
-  <!-- رأس الصفحة ويحتوي أزرار الآلة الحاسبة والشهور الماضية بوضوح تام -->
+  <!-- رأس الصفحة يضم زر الآلة الحاسبة وزر السجل الشهري بوضوح -->
   <div class="app-header">
     <div class="header-title">بيت حسان <span>🏠</span></div>
     <div class="header-actions">
       <button class="icon-btn" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
-      <button class="icon-btn" onclick="showMonthlyReport()" title="الشّهور الماضية">📅</button>
+      <button class="icon-btn" onclick="showMonthlyReport()" title="الشهور الماضية">📅</button>
     </div>
   </div>
 
@@ -171,11 +170,11 @@
       </div>
     </div>
 
-    <!-- زر رئيسي واضح لتصفح الشهور الماضية وحفظ التقرير PDF -->
+    <!-- زر تصفح وحفظ الشهور الماضية -->
     <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 تصفح الشهور الماضية وحفظ PDF</button>
   </div>
 
-  <!-- زر حاسبة عائم في الأسفل للوصول الفوري -->
+  <!-- زر الآلة الحاسبة العائم في الأسفل -->
   <button class="calc-fab" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
 </div>
 
@@ -213,11 +212,11 @@
   </div>
 </div>
 
-<!-- نافذة تصفح الشهور الماضية وحفظ PDF -->
+<!-- نافذة عرض الشهور الماضية وحفظ PDF -->
 <div id="monthlyModal" class="modal-overlay hidden">
   <div class="sheet">
     <div class="sheet-title">
-      <span>📅 تصفح الشهور الماضية وحفظ PDF</span>
+      <span>📅 تصفح وحفظ الشهور الماضية</span>
       <button class="sheet-close" onclick="closeMonthlyReport()">✕</button>
     </div>
     
@@ -242,10 +241,10 @@
       </select>
     </div>
 
-    <!-- الجزء القابل للطباعة والحفظ كملف PDF -->
+    <!-- محتوى التقرير القابل للحفظ كـ PDF -->
     <div id="monthlyReportPrintable">
       <div id="monthlyContent" style="background: var(--card); padding: 16px; border-radius: 16px; border: 1px solid var(--border);">
-        <!-- محتوى الشهر -->
+        <!-- يتم جلب بيانات الشهر هنا -->
       </div>
     </div>
 
