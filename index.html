@@ -35,7 +35,7 @@
   }
   .header-title { font-size: 18px; font-weight: 700; }
   .header-title span { color: var(--primary); }
-  .header-actions { display: flex.gap: 8px; gap: 8px; }
+  .header-actions { display: flex; gap: 8px; }
   .icon-btn {
     width: 44px; height: 44px; border-radius: 14px;
     background: var(--card); border: 1px solid var(--border);
@@ -151,12 +151,12 @@
 <body>
 
 <div id="homeScreen">
-  <!-- رأس الصفحة ويحتوي زر الآلة الحاسبة وزر الشهور بوضوح -->
+  <!-- رأس الصفحة ويحتوي أزرار الآلة الحاسبة والشهور الماضية بوضوح تام -->
   <div class="app-header">
-    <div class="header-title">بيتنا <span>🏠</span></div>
+    <div class="header-title">بيت حسان <span>🏠</span></div>
     <div class="header-actions">
       <button class="icon-btn" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
-      <button class="icon-btn" onclick="showMonthlyReport()" title="الشهور الماضية">📅</button>
+      <button class="icon-btn" onclick="showMonthlyReport()" title="الشّهور الماضية">📅</button>
     </div>
   </div>
 
@@ -164,18 +164,18 @@
     <div class="summary-card">
       <div class="summary-row">
         <div>
-          <div class="summary-label">💰 إجمالي مشتريات الشهر</div>
-          <div class="summary-value"><span id="totalPrice">0.00</span> <small>$</small></div>
+          <div class="summary-label">💰 إجمالي مشتريات اليوم</div>
+          <div class="summary-value"><span id="totalPrice">1050.00</span> <small>$</small></div>
         </div>
         <div style="font-size: 40px; opacity: 0.4;">🛒</div>
       </div>
     </div>
 
-    <!-- زر رئيسي للشهور الماضية وحفظ PDF -->
-    <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 عرض الشهور الماضية وحفظ PDF</button>
+    <!-- زر رئيسي واضح لتصفح الشهور الماضية وحفظ التقرير PDF -->
+    <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 تصفح الشهور الماضية وحفظ PDF</button>
   </div>
 
-  <!-- زر حاسبة عائم في الأسفل لضمان رؤيته وسرعة الوصول إليه -->
+  <!-- زر حاسبة عائم في الأسفل للوصول الفوري -->
   <button class="calc-fab" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
 </div>
 
