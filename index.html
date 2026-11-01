@@ -68,10 +68,11 @@
     box-shadow: 0 6px 18px rgba(184, 123, 58, 0.3);
     transition: all 0.2s;
   }
+  .monthly-big-btn:active { transform: scale(0.98); }
 
   .calc-fab {
     position: fixed; bottom: 90px; left: 24px;
-    width: 52px; height: 52px; border-radius: 50%;
+    width: 54px; height: 54px; border-radius: 50%;
     background: linear-gradient(135deg, #4A6D5F 0%, #2D3A3A 100%);
     color: white; border: none; font-size: 24px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -80,7 +81,7 @@
   }
   .calc-fab:active { transform: scale(0.92); }
 
-  /* Calculator Styles */
+  /* الحاسبة */
   .calculator-grid {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;
   }
@@ -105,6 +106,7 @@
   .calc-btn.equal { background: var(--primary); color: white; border: none; }
   .calc-btn.clear { background: #FFF5F3; color: var(--danger); border-color: #F0D5CF; }
 
+  /* النوافذ المنسدلة والمودال */
   .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(45, 58, 58, 0.5);
@@ -134,6 +136,14 @@
     border: 1px solid var(--border); background: var(--card);
     font-size: 15px; font-family: inherit; font-weight: 600;
   }
+  .pdf-btn {
+    width: 100%; padding: 14px; margin-top: 14px;
+    border: none; border-radius: 14px;
+    background: linear-gradient(135deg, #B87B6E 0%, #8A4238 100%);
+    color: white; font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .pdf-btn:active { transform: scale(0.98); }
 </style>
 </head>
 <body>
@@ -142,8 +152,10 @@
   <div class="app-header">
     <div class="header-title">بيتنا 🏠</div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="openCalculator()" data-tooltip="🧮 آلة حاسبة">🧮</button>
-      <button class="icon-btn" onclick="showMonthlyReport()" data-tooltip="📊 السجل الشهري">📊</button>
+      <!-- زر الآلة الحاسبة في أعلى الشاشة -->
+      <button class="icon-btn" onclick="openCalculator()" data-tooltip="🧮 الآلة الحاسبة" title="الآلة الحاسبة">🧮</button>
+      <!-- زر السجل الشهري -->
+      <button class="icon-btn" onclick="showMonthlyReport()" data-tooltip="📊 السجل الشهري" title="السجل الشهري">📊</button>
     </div>
   </div>
 
@@ -158,13 +170,15 @@
       </div>
     </div>
 
-    <button class="monthly-big-btn" onclick="showMonthlyReport()">📊 عرض الشهور الماضية والحفظ</button>
+    <!-- زر اختيار وتصفح الشهور -->
+    <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 تصفح الشهور الماضية وحفظ PDF</button>
   </div>
 
-  <button class="calc-fab" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
+  <!-- زر حاسبة عائم إضافي في الأسفل -->
+  <button class="calc-fab" onclick="openCalculator()" title="فتح الآلة الحاسبة">🧮</button>
 </div>
 
-<!-- مودال الآلة الحاسبة -->
+<!-- نافذة الآلة الحاسبة -->
 <div id="calculatorModal" class="modal-overlay hidden">
   <div class="sheet">
     <div class="sheet-title">
@@ -198,41 +212,46 @@
   </div>
 </div>
 
-<!-- مودال الشهور الماضية -->
+<!-- نافذة عرض الشهور وحفظ PDF -->
 <div id="monthlyModal" class="modal-overlay hidden">
   <div class="sheet">
     <div class="sheet-title">
-      <span>📊 أرشيف الشهور الماضية</span>
+      <span>📅 تصفح وحفظ الشهور الماضية</span>
       <button class="sheet-close" onclick="closeMonthlyReport()">✕</button>
     </div>
     <div class="month-picker-row">
       <select id="monthSelect" class="select-field" onchange="loadSelectedMonthData()">
-        <option value="1">يناير / كانون الثاني</option>
-        <option value="2">فبراير / شباط</option>
-        <option value="3">مارس / آذار</option>
-        <option value="4">أبريل / نيسان</option>
-        <option value="5">مايو / أيار</option>
-        <option value="6">يونيو / حزيران</option>
-        <option value="7">يوليو / تموز</option>
-        <option value="8">أغسطس / آب</option>
-        <option value="9">سبتمبر / أيلول</option>
-        <option value="10">أكتوبر / تشرين الأول</option>
-        <option value="11">نوفمبر / تشرين الثاني</option>
-        <option value="12">ديسمبر / كانون الأول</option>
+        <option value="1">1 - يناير / كانون الثاني</option>
+        <option value="2">2 - فبراير / شباط</option>
+        <option value="3">3 - مارس / آذار</option>
+        <option value="4">4 - أبريل / نيسان</option>
+        <option value="5">5 - مايو / أيار</option>
+        <option value="6">6 - يونيو / حزيران</option>
+        <option value="7">7 - يوليو / تموز</option>
+        <option value="8">8 - أغسطس / آب</option>
+        <option value="9">9 - سبتمبر / أيلول</option>
+        <option value="10">10 - أكتوبر / تشرين الأول</option>
+        <option value="11">11 - نوفمبر / تشرين الثاني</option>
+        <option value="12">12 - ديسمبر / كانون الأول</option>
       </select>
       <select id="yearSelect" class="select-field" onchange="loadSelectedMonthData()">
         <option value="2026">2026</option>
         <option value="2025">2025</option>
       </select>
     </div>
-    <div id="monthlyContent">
-      <p style="text-align: center; color: var(--text-light); padding: 20px;">جارٍ تحميل سجل الشهر المختارات...</p>
+
+    <div id="monthlyReportPrintable">
+      <div id="monthlyContent">
+        <!-- يتم عرض محتوى الشهر المختار هنا -->
+      </div>
     </div>
+
+    <button class="pdf-btn" onclick="downloadPDF()">📄 تحميل التقرير PDF</button>
   </div>
 </div>
 
 <script>
-  // كود الآلة الحاسبة
+  // دالة التحكم بالآلة الحاسبة
   let calcExpression = "";
   function openCalculator() {
     document.getElementById('calculatorModal').classList.remove('hidden');
@@ -260,7 +279,7 @@
     }
   }
 
-  // كود السجل الشهري والشهور الماضية
+  // دالة التحكم بالشهور وحفظ PDF
   function showMonthlyReport() {
     document.getElementById('monthlyModal').classList.remove('hidden');
     const now = new Date();
@@ -271,19 +290,36 @@
   function closeMonthlyReport() {
     document.getElementById('monthlyModal').classList.add('hidden');
   }
+
   function loadSelectedMonthData() {
     const month = document.getElementById('monthSelect').value;
     const year = document.getElementById('yearSelect').value;
     const container = document.getElementById('monthlyContent');
     
-    // محاكاة استعراض وتنسيق سجل الشهر المنقضي
     container.innerHTML = `
       <div style="background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; padding: 18px; border-radius: 16px; text-align: center; margin-bottom: 15px;">
-        <div style="font-size: 13px; opacity: 0.9;">ملخص شهر ${month} / ${year}</div>
+        <div style="font-size: 13px; opacity: 0.9;">تقرير شهر ${month} / ${year}</div>
         <div style="font-size: 26px; font-weight: 700; margin-top: 4px;">0.00 $</div>
       </div>
-      <p style="text-align: center; color: var(--text-light); font-size: 14px;">لا توجد سجلات محفوظة إضافية لهذا الشهر حتى الآن.</p>
+      <p style="text-align: center; color: var(--text-light); font-size: 14px; padding: 10px;">عرض البيانات المسجلة لشهر ${month} - ${year}</p>
     `;
+  }
+
+  // حفظ التقرير PDF
+  function downloadPDF() {
+    const month = document.getElementById('monthSelect').value;
+    const year = document.getElementById('yearSelect').value;
+    const element = document.getElementById('monthlyReportPrintable');
+    
+    const opt = {
+      margin:       10,
+      filename:     `تقرير_بيتنا_${month}_${year}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
   }
 </script>
 
