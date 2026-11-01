@@ -48,6 +48,7 @@
     background: var(--card); font-size: 16px; font-family: inherit; color: var(--text);
     transition: all 0.2s;
   }
+
   .btn {
     width: 100%; padding: 16px; border: none; border-radius: 16px;
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -72,7 +73,7 @@
     background: var(--card); border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
     font-size: 20px; cursor: pointer; position: relative;
-    transition: all 0.2s;
+    box-shadow: var(--shadow); transition: all 0.2s;
   }
   .container { max-width: 560px; margin: 0 auto; padding: 16px 20px; }
 
@@ -92,21 +93,19 @@
   .summary-stat-value { font-size: 18px; font-weight: 700; }
 
   .monthly-big-btn {
-    width: 100%; padding: 18px; margin-bottom: 16px;
+    width: 100%; padding: 16px; margin-bottom: 16px;
     border: none; border-radius: 16px;
     background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%);
     color: white; font-family: inherit;
-    font-size: 17px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    gap: 10px; box-shadow: 0 6px 18px rgba(184, 123, 58, 0.3);
-    transition: all 0.2s;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 6px 18px rgba(184, 123, 58, 0.3);
   }
 
   .extra-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .extra-btn {
     padding: 14px; border-radius: 14px; font-family: inherit; font-size: 14px; font-weight: 700;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-    transition: all 0.2s; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; border: none;
   }
   .extra-btn.archive-btn { background: #E8EEF2; color: #4A6D5F; border: 2px dashed #4A6D5F; }
   .extra-btn.missing-btn { background: #FFF3D6; color: #8B6914; border: 2px dashed #D4A55C; }
@@ -144,7 +143,6 @@
     display: flex; align-items: center; gap: 8px; z-index: 50;
   }
 
-  /* زر الآلة الحاسبة العائم */
   .calc-fab {
     position: fixed; bottom: 24px; right: 24px;
     width: 56px; height: 56px; border-radius: 50%;
@@ -154,7 +152,6 @@
     box-shadow: 0 8px 24px rgba(45, 58, 58, 0.35); z-index: 90;
   }
 
-  /* تصميم الآلة الحاسبة */
   .calculator-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
   .calc-screen {
     grid-column: span 4; background: #2D3A3A; color: #FFFFFF;
@@ -169,7 +166,6 @@
   .calc-btn.equal { background: var(--primary); color: white; border: none; }
   .calc-btn.clear { background: #FFF5F3; color: var(--danger); border-color: #F0D5CF; }
 
-  /* النوافذ المنبثقة */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(45, 58, 58, 0.5);
     backdrop-filter: blur(4px); z-index: 500; display: flex; align-items: flex-end; justify-content: center;
@@ -179,7 +175,7 @@
     border-radius: 28px 28px 0 0; padding: 20px; overflow-y: auto;
   }
   .sheet-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-  .sheet-close { width: 34px; height: 34px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); cursor: pointer; }
+  .sheet-close { width: 34px; height: 34px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .month-picker-row { display: flex; gap: 10px; margin-bottom: 16px; }
   .select-field { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); font-size: 14px; font-weight: 600; }
   .pdf-btn {
@@ -340,6 +336,7 @@
 
     <div id="monthlyReportPrintable">
       <div id="monthlyContent" style="background: var(--card); padding: 16px; border-radius: 16px; border: 1px solid var(--border);">
+        <p style="text-align: center; color: var(--text-light);">جارِ جلب بيانات الشهر...</p>
       </div>
     </div>
 
@@ -350,8 +347,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, deleteDoc, doc, updateDoc,
-  onSnapshot, query, orderBy
+  getFirestore, collection, getDocs, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -366,7 +362,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ربط الوظائف للـ Window
 window.login = function() {
   const name = document.getElementById('usernameInput').value.trim();
   if(name) {
@@ -383,7 +378,6 @@ window.logout = function() {
   document.getElementById('homeScreen').classList.add('hidden');
 };
 
-// الآلة الحاسبة
 let calcExpression = "";
 window.openCalculator = () => document.getElementById('calculatorModal').classList.remove('hidden');
 window.closeCalculator = () => document.getElementById('calculatorModal').classList.add('hidden');
@@ -400,7 +394,6 @@ window.calculateResult = () => {
   }
 };
 
-// الشهور الماضية
 window.showMonthlyReport = () => {
   document.getElementById('monthlyModal').classList.remove('hidden');
   const now = new Date();
@@ -408,18 +401,53 @@ window.showMonthlyReport = () => {
   document.getElementById('yearSelect').value = now.getFullYear().toString();
   window.loadSelectedMonthData();
 };
+
 window.closeMonthlyReport = () => document.getElementById('monthlyModal').classList.add('hidden');
-window.loadSelectedMonthData = () => {
+
+// دالة جلب وعرض بيانات الشهر المختار من قاعدة البيانات
+window.loadSelectedMonthData = async () => {
   const monthSelect = document.getElementById('monthSelect');
   const monthName = monthSelect.options[monthSelect.selectedIndex].text;
-  const year = document.getElementById('yearSelect').value;
-  document.getElementById('monthlyContent').innerHTML = `
-    <div style="background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; padding: 16px; border-radius: 14px; text-align: center; margin-bottom: 12px;">
-      <div style="font-size: 13px; opacity: 0.9;">تقرير شهر ${monthName} ${year}</div>
-      <div style="font-size: 24px; font-weight: 700; margin-top: 4px;">0.00 $</div>
-    </div>
-    <p style="text-align: center; color: var(--text-light); font-size: 13px; padding: 10px;">عرض سجل المشتريات لشهر ${monthName}.</p>
-  `;
+  const targetMonth = parseInt(monthSelect.value);
+  const targetYear = parseInt(document.getElementById('yearSelect').value);
+  const container = document.getElementById('monthlyContent');
+
+  container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 10px;">جارِ تحميل السجلات...</p>`;
+
+  try {
+    const querySnapshot = await getDocs(collection(db, "items"));
+    let totalMonthPrice = 0;
+    let itemsHtml = "";
+
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.date) {
+        const itemDate = new Date(data.date);
+        if (itemDate.getMonth() + 1 === targetMonth && itemDate.getFullYear() === targetYear) {
+          const itemTotal = (parseFloat(data.price) || 0) * (parseFloat(data.weight) || 1);
+          totalMonthPrice += itemTotal;
+          itemsHtml += `
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F5F1EA; font-size: 13px;">
+              <span>${data.name || 'مادة'}</span>
+              <b style="color: #B87B3A;">${itemTotal.toFixed(2)} $</b>
+            </div>
+          `;
+        }
+      }
+    });
+
+    container.innerHTML = `
+      <div style="background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; padding: 16px; border-radius: 14px; text-align: center; margin-bottom: 12px;">
+        <div style="font-size: 13px; opacity: 0.9;">تقرير شهر ${monthName} ${targetYear}</div>
+        <div style="font-size: 24px; font-weight: 700; margin-top: 4px;">${totalMonthPrice.toFixed(2)} $</div>
+      </div>
+      <div style="max-height: 200px; overflow-y: auto;">
+        ${itemsHtml || '<p style="text-align: center; color: var(--text-light); font-size: 13px; padding: 10px;">لا توجد مشتريات مسجلة في هذا الشهر.</p>'}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<p style="text-align: center; color: var(--danger); font-size: 13px; padding: 10px;">خطأ في جلب البيانات من السحابة.</p>`;
+  }
 };
 
 window.downloadPDF = () => {
@@ -434,7 +462,6 @@ window.downloadPDF = () => {
   }).from(element).save();
 };
 
-// الفحص التلقائي للحساب عند الفتح
 const savedUser = localStorage.getItem('baytna_user');
 if(savedUser) {
   document.getElementById('usernameDisplay').innerText = savedUser;
