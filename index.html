@@ -55,7 +55,6 @@
     cursor: pointer; box-shadow: 0 4px 16px rgba(107, 144, 128, 0.25);
   }
 
-  .hidden { display: none !important; }
   .app-header {
     position: sticky; top: 0; z-index: 100;
     background: rgba(245, 241, 234, 0.92);
@@ -77,12 +76,33 @@
   .summary-card {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white; padding: 22px; border-radius: 22px;
-    margin-bottom: 20px; box-shadow: 0 8px 24px rgba(107, 144, 128, 0.25);
+    margin-bottom: 16px; box-shadow: 0 8px 24px rgba(107, 144, 128, 0.25);
   }
   .summary-row { display: flex; justify-content: space-between; align-items: center; }
   .summary-label { font-size: 13px; opacity: 0.85; margin-bottom: 6px; }
   .summary-value { font-size: 32px; font-weight: 700; }
-  .summary-value small { font-size: 16px; font-weight: 500; opacity: 0.9; }
+  .summary-stats { display: flex; gap: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.2); }
+  .summary-stat { flex: 1; }
+  .summary-stat-label { font-size: 12px; opacity: 0.8; margin-bottom: 2px; }
+  .summary-stat-value { font-size: 18px; font-weight: 700; }
+
+  .action-main-btn {
+    width: 100%; padding: 16px; margin-bottom: 12px;
+    border: none; border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white; font-family: inherit; font-size: 16px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 6px 18px rgba(107, 144, 128, 0.25);
+  }
+
+  .archive-day-btn {
+    width: 100%; padding: 14px; margin-bottom: 12px;
+    border: none; border-radius: 16px;
+    background: linear-gradient(135deg, #2D3A3A 0%, #1A2222 100%);
+    color: white; font-family: inherit; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 4px 14px rgba(45, 58, 58, 0.2);
+  }
 
   .monthly-big-btn {
     width: 100%; padding: 16px; margin-bottom: 16px;
@@ -92,6 +112,42 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
     box-shadow: 0 6px 18px rgba(184, 123, 58, 0.3);
   }
+
+  .today-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; margin-bottom: 12px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0EBE0 100%);
+    border: 1px solid var(--border); border-radius: 14px;
+    font-size: 14px; font-weight: 700; color: var(--primary-dark);
+  }
+
+  .search-wrap { position: relative; margin-bottom: 16px; }
+  .search-input {
+    width: 100%; padding: 14px 44px 14px 18px;
+    border: 1px solid var(--border); border-radius: 14px;
+    background: var(--card); font-size: 15px; font-family: inherit; color: var(--text);
+  }
+
+  .item-card {
+    background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+  .item-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .item-meta { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .item-badge { padding: 3px 8px; border-radius: 6px; background: #F0EBE0; font-size: 11px; color: var(--text-light); }
+  .item-price-info { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; justify-content: space-between; }
+  .item-price-badge { padding: 5px 10px; border-radius: 10px; background: #E8F5E9; color: #1B5E20; font-size: 13px; font-weight: 600; border: 1.5px solid #7BA77E; }
+  .item-total-badge { padding: 5px 12px; border-radius: 10px; background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; font-size: 14px; font-weight: 700; }
+  
+  .item-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .action-btn {
+    padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  .action-btn.edit { color: var(--primary-dark); border-color: var(--primary); }
+  .action-btn.done { color: var(--success-dark); border-color: var(--success); }
+  .action-btn.cancel { color: var(--warning); border-color: var(--warning); }
+  .action-btn.delete { color: var(--danger); border-color: var(--danger); }
 
   .calc-fab {
     position: fixed; bottom: 24px; right: 24px;
@@ -110,7 +166,7 @@
   }
   .calc-btn {
     padding: 16px; font-size: 20px; font-weight: 700; border-radius: 14px;
-    border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--text); cursor: pointer;
   }
   .calc-btn.op { background: #E8EEF2; color: var(--primary-dark); }
   .calc-btn.equal { background: var(--primary); color: white; border: none; }
@@ -118,7 +174,7 @@
 
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(45, 58, 58, 0.5);
-    backdrop-filter: blur(4px); z-index: 500; display: flex; align-items: flex-end; justify-content: center;
+    backdrop-filter: blur(4px); z-index: 500; display: none; align-items: flex-end; justify-content: center;
   }
   .sheet {
     width: 100%; max-width: 560px; max-height: 90vh; background: var(--bg);
@@ -136,25 +192,25 @@
 </head>
 <body>
 
-<div id="loginScreen" class="login-wrap">
+<div id="loginScreen" class="login-wrap" style="display: flex;">
   <div class="login-logo">🏠</div>
   <div class="login-title">بيتنا</div>
   <div class="login-sub">إدارة مخزون المنزل بذكاء</div>
   <div class="login-form">
     <div class="input-group">
       <label class="input-label">اسمك</label>
-      <input type="text" id="usernameInput" class="input-field" placeholder="مثال: حسن" autocomplete="off">
+      <input type="text" id="usernameInput" class="input-field" value="حسان" autocomplete="off">
     </div>
-    <button class="btn" onclick="login()">دخول</button>
+    <button class="btn" type="button" onclick="doLogin()">دخول</button>
   </div>
 </div>
 
-<div id="homeScreen" class="hidden">
+<div id="homeScreen" style="display: none;">
   <div class="app-header">
-    <div class="header-title">بيت <span id="usernameDisplay"></span> <span>🏠</span></div>
+    <div class="header-title">بيت <span id="usernameDisplay">حسان</span> <span>🏠</span></div>
     <div class="header-actions">
       <button class="icon-btn" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
-      <button class="icon-btn" onclick="showMonthlyReport()" title="الشهور الماضية">📅</button>
+      <button class="icon-btn" onclick="showMonthlyReport()" title="الشهور والأرشيف">📅</button>
       <button class="icon-btn" onclick="logout()" title="خروج">🚪</button>
     </div>
   </div>
@@ -168,16 +224,36 @@
         </div>
         <div style="font-size: 40px; opacity: 0.4;">🛒</div>
       </div>
+      <div class="summary-stats">
+        <div class="summary-stat">
+          <div class="summary-stat-label">📦 عدد المواد اليوم</div>
+          <div class="summary-stat-value"><span id="totalWeight">0</span> <small style="font-size:12px;">مادة</small></div>
+        </div>
+      </div>
     </div>
 
-    <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 تصفح الشهور الماضية وحفظ PDF</button>
+    <!-- أزرار الإدارة الرئيسية -->
+    <button class="action-main-btn" onclick="addNewItemPrompt()">➕ إضافة مادة لليوم الجديد</button>
+    <button class="archive-day-btn" onclick="archiveCurrentDay()">📥 أرشفة اليوم وحفظه (بدء يوم جديد)</button>
+    <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 تصفح السجل الشهري والأرشيف وحفظ PDF</button>
+
+    <div class="today-bar" id="currentDateBar">
+      <span>📅 نشاط اليوم</span>
+      <span id="dateDisplayString" style="color: var(--text-light); font-size: 12.5px;"></span>
+    </div>
+
+    <div class="search-wrap">
+      <input type="text" id="searchInput" class="search-input" placeholder="ابحث في مواد اليوم..." oninput="filterTodayItems()">
+    </div>
+
+    <div id="itemsList"></div>
   </div>
 
   <button class="calc-fab" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
 </div>
 
 <!-- نافذة الآلة الحاسبة -->
-<div id="calculatorModal" class="modal-overlay hidden">
+<div id="calculatorModal" class="modal-overlay">
   <div class="sheet">
     <div class="sheet-title">
       <span>🧮 الآلة الحاسبة</span>
@@ -210,15 +286,19 @@
   </div>
 </div>
 
-<!-- نافذة عرض الشهور الماضية وحفظ PDF -->
-<div id="monthlyModal" class="modal-overlay hidden">
+<!-- نافذة عرض الشهور والتقارير والأرشيف -->
+<div id="monthlyModal" class="modal-overlay">
   <div class="sheet">
     <div class="sheet-title">
-      <span>📅 تصفح الشهور الماضية وحفظ PDF</span>
+      <span>📅 الأرشيف والسجل الشهري وحفظ PDF</span>
       <button class="sheet-close" onclick="closeMonthlyReport()">✕</button>
     </div>
     
     <div class="month-picker-row">
+      <select id="yearSelect" class="select-field" onchange="loadSelectedMonthData()">
+        <option value="2026" selected>2026</option>
+        <option value="2025">2025</option>
+      </select>
       <select id="monthSelect" class="select-field" onchange="loadSelectedMonthData()">
         <option value="1">كانون الثاني (يناير)</option>
         <option value="2">شباط (فبراير)</option>
@@ -233,149 +313,423 @@
         <option value="11">تشرين الثاني (نوفمبر)</option>
         <option value="12">كانون الأول (ديسمبر)</option>
       </select>
-      <select id="yearSelect" class="select-field" onchange="loadSelectedMonthData()">
-        <option value="2026" selected>2026</option>
-        <option value="2025">2025</option>
-      </select>
     </div>
 
-    <!-- الجزء الذي سيتضمن البيانات ويتم حفظه كـ PDF -->
     <div id="monthlyReportPrintable">
       <div id="monthlyContent" style="background: var(--card); padding: 16px; border-radius: 16px; border: 1px solid var(--border);">
-        <p style="text-align: center; color: var(--text-light);">جارِ جلب بيانات الشهر...</p>
+        <p style="text-align: center; color: var(--text-light);">جارِ جلب بيانات الأرشيف...</p>
       </div>
     </div>
 
-    <button class="pdf-btn" onclick="downloadPDF()">📄 حفظ التقرير كملف PDF</button>
+    <button class="pdf-btn" onclick="downloadPDF()">📄 حفظ الأرشيف كملف PDF</button>
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore, collection, getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<script>
+let allItemsCache = [];
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCGET1u-j9p7TCkAXmZJWdjp0HLNszVC9Q",
-  authDomain: "baytna-e0a77.firebaseapp.com",
-  projectId: "baytna-e0a77",
-  storageBucket: "baytna-e0a77.firebasestorage.app",
-  messagingSenderId: "807987531508",
-  appId: "1:807987531508:android:3f5"
-};
+function displayTodayHeaderInfo() {
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const todayStr = new Date().toLocaleDateString('ar-SY', options);
+  const el = document.getElementById('dateDisplayString');
+  if(el) el.innerText = todayStr;
+}
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-window.login = function() {
-  const name = document.getElementById('usernameInput').value.trim();
-  if(name) {
-    localStorage.setItem('baytna_user', name);
-    document.getElementById('usernameDisplay').innerText = name;
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('homeScreen').classList.remove('hidden');
-  }
+window.doLogin = function() {
+  const nameInput = document.getElementById('usernameInput');
+  const name = nameInput ? nameInput.value.trim() : "حسان";
+  localStorage.setItem('baytna_user', name);
+  
+  const userDisplay = document.getElementById('usernameDisplay');
+  if(userDisplay) userDisplay.innerText = name;
+  
+  const loginScr = document.getElementById('loginScreen');
+  const homeScr = document.getElementById('homeScreen');
+  
+  if(loginScr) loginScr.style.display = 'none';
+  if(homeScr) homeScr.style.display = 'block';
+  
+  displayTodayHeaderInfo();
+  loadTodayLocalItems();
 };
 
 window.logout = function() {
   localStorage.removeItem('baytna_user');
-  document.getElementById('loginScreen').classList.remove('hidden');
-  document.getElementById('homeScreen').classList.add('hidden');
+  const homeScr = document.getElementById('homeScreen');
+  const loginScr = document.getElementById('loginScreen');
+  if(homeScr) homeScr.style.display = 'none';
+  if(loginScr) loginScr.style.display = 'flex';
+};
+
+function parseUnitChoice(choice) {
+  if (!choice) return "كغ";
+  const str = choice.toString().trim();
+  if (str === "1" || str.includes("كغ")) return "كغ";
+  if (str === "2" || str.includes("ليتر")) return "ليتر";
+  if (str === "3" || str.includes("علب")) return "علبه";
+  if (str === "4" || str.includes("ربط")) return "ربطة";
+  if (str === "5" || str.includes("قطعل")) return "قطعة";
+  return str || "كغ";
+}
+
+// دالة جلب وعرض مواد اليوم الحالي المحفوظة محلياً (لكل يوم صفحته الخاصة)
+function loadTodayLocalItems() {
+  const todayKey = 'baytna_items_' + new Date().toDateString();
+  const saved = localStorage.getItem(todayKey);
+  if (saved) {
+    try {
+      allItemsCache = JSON.parse(saved);
+    } catch(e) {
+      allItemsCache = [];
+    }
+  } else {
+    allItemsCache = [];
+  }
+  window.renderItemsList(allItemsCache);
+}
+
+function saveTodayLocalItems() {
+  const todayKey = 'baytna_items_' + new Date().toDateString();
+  localStorage.setItem(todayKey, JSON.stringify(allItemsCache));
+}
+
+// أرشفة اليوم الحالي وبدء صفحة يوم جديد نظيف
+window.archiveCurrentDay = function() {
+  if (!confirm("هل تريد أرشفة مشتريات هذا اليوم ونقلها إلى السجل الشهري، وبدء صفحة يوم جديد؟")) return;
+  
+  // حفظ العناصر الحالية في أرشيف الشهور
+  const archiveKey = 'baytna_archive_list';
+  let archive = [];
+  try {
+    archive = JSON.parse(localStorage.getItem(archiveKey) || '[]');
+  } catch(e) { archive = []; }
+
+  // دمج أو إضافة عناصر اليوم للأرشيف مع الحفاظ على تاريخ اليوم
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate = new Date().toLocaleDateString('ar-SY', options);
+
+  allItemsCache.forEach(item => {
+    archive.push({ ...item, archivedDate: formattedDate, timestamp: Date.now() });
+  });
+
+  localStorage.setItem(archiveKey, JSON.stringify(archive));
+
+  // تفريغ قائمة اليوم الحالي للبدء بيوم جديد نظيف
+  const todayKey = 'baytna_items_' + new Date().toDateString();
+  allItemsCache = [];
+  localStorage.removeItem(todayKey);
+  window.renderItemsList(allItemsCache);
+
+  alert("تمت أرشفة اليوم بنجاح وأصبحت الصفحة جاهزة بيوماً جديداً!");
+};
+
+window.addNewItemPrompt = function() {
+  const name = prompt("أدخل اسم المادة الجديدة:");
+  if (!name || !name.trim()) return;
+  
+  const price = prompt("أدخل السعر ($):", "0");
+  if (price === null) return;
+  
+  const weight = prompt("أدخل الكمية (الرقم):", "1");
+  if (weight === null) return;
+  
+  const unitChoice = prompt("اختر وحدة القياس:\n1: كغ\n2: ليتر\n3: علبه\n4: ربطة\n5: قطعة", "1");
+  if (unitChoice === null) return;
+  
+  const unit = parseUnitChoice(unitChoice);
+
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate = new Date().toLocaleDateString('ar-SY', options);
+
+  const newItem = {
+    id: 'local_' + Date.now(),
+    name: name.trim(),
+    price: parseFloat(price) || 0,
+    weight: parseFloat(weight) || 1,
+    unit: unit,
+    status: 'active',
+    date: formattedDate,
+    formattedDate: formattedDate
+  };
+
+  allItemsCache.unshift(newItem);
+  saveTodayLocalItems();
+  window.renderItemsList(allItemsCache);
 };
 
 let calcExpression = "";
-window.openCalculator = () => document.getElementById('calculatorModal').classList.remove('hidden');
-window.closeCalculator = () => document.getElementById('calculatorModal').classList.add('hidden');
-window.pressCalc = (val) => { calcExpression += val; document.getElementById('calcScreen').innerText = calcExpression; };
-window.clearCalc = () => { calcExpression = ""; document.getElementById('calcScreen').innerText = "0"; };
-window.calculateResult = () => {
+window.openCalculator = function() {
+  const m = document.getElementById('calculatorModal');
+  if(m) m.style.display = 'flex';
+};
+window.closeCalculator = function() {
+  const m = document.getElementById('calculatorModal');
+  if(m) m.style.display = 'none';
+};
+window.pressCalc = function(val) {
+  calcExpression += val;
+  const s = document.getElementById('calcScreen');
+  if(s) s.innerText = calcExpression;
+};
+window.clearCalc = function() {
+  calcExpression = "";
+  const s = document.getElementById('calcScreen');
+  if(s) s.innerText = "0";
+};
+window.calculateResult = function() {
   try {
     let res = eval(calcExpression);
-    document.getElementById('calcScreen').innerText = res;
+    const s = document.getElementById('calcScreen');
+    if(s) s.innerText = res;
     calcExpression = res.toString();
   } catch(e) {
-    document.getElementById('calcScreen').innerText = "خطأ";
+    const s = document.getElementById('calcScreen');
+    if(s) s.innerText = "خطأ";
     calcExpression = "";
   }
 };
 
-window.showMonthlyReport = () => {
-  document.getElementById('monthlyModal').classList.remove('hidden');
-  window.loadSelectedMonthData();
+window.showMonthlyReport = function() {
+  const m = document.getElementById('monthlyModal');
+  if(m) m.style.display = 'flex';
+  loadSelectedMonthData();
+};
+window.closeMonthlyReport = function() {
+  const m = document.getElementById('monthlyModal');
+  if(m) m.style.display = 'none';
 };
 
-window.closeMonthlyReport = () => document.getElementById('monthlyModal').classList.add('hidden');
+window.renderItemsList = function(items) {
+  const listContainer = document.getElementById('itemsList');
+  if(!listContainer) return;
+  let html = "";
+  let totalP = 0;
+  let activeItemsCount = 0;
 
-// دالة لجلب بيانات المشتريات الحقيقية للشهر المحدد من قاعدة البيانات وتحديث الواجهة
-window.loadSelectedMonthData = async () => {
+  items.sort((a, b) => {
+    const statusA = a.status || 'active';
+    const statusB = b.status || 'active';
+    if (statusA === 'active' && statusB !== 'active') return -1;
+    if (statusA !== 'active' && statusB === 'active') return 1;
+    return 0;
+  });
+
+  items.forEach((data, index) => {
+    const p = parseFloat(data.price) || 0;
+    const w = parseFloat(data.weight) || 1;
+    const u = data.unit || 'كغ';
+    const status = data.status || 'active';
+    const sub = p * w;
+    
+    if (status === 'active') {
+      totalP += sub;
+      activeItemsCount += 1;
+    }
+
+    let statusBadge = "";
+    let cardStyle = "";
+    if (status === 'done') {
+      statusBadge = ' <span style="color:var(--success-dark); font-size:12px; font-weight:700;">(✓ تم شراؤه)</span>';
+      cardStyle = 'opacity: 0.75; background: #F3F8F2;';
+    } else if (status === 'cancelled') {
+      statusBadge = ' <span style="color:var(--danger); font-size:12px; font-weight:700; text-decoration: line-through;">(✕ ملغى)</span>';
+      cardStyle = 'opacity: 0.6; background: #FAF5F4;';
+    }
+
+    html += `
+      <div class="item-card" style="${cardStyle}">
+        <div class="item-header">
+          <div>
+            <div class="item-name" style="${status === 'cancelled' ? 'text-decoration: line-through; color: var(--text-light);' : ''}">${data.name || 'مادة بدون اسم'}${statusBadge}</div>
+            <div class="item-meta">
+              <span class="item-badge">📅 ${data.date || 'تاريخ اليوم'}</span>
+            </div>
+          </div>
+          <div style="text-align: left;">
+            <div style="font-size: 20px; font-weight: 700; color: var(--primary-dark);">${w} <small style="font-size:12px;">${u}</small></div>
+          </div>
+        </div>
+        <div class="item-price-info">
+          <span class="item-price-badge">السعر: ${p.toFixed(2)} $</span>
+          <span class="item-total-badge">الإجمالي: ${sub.toFixed(2)} $</span>
+        </div>
+        <div class="item-actions">
+          <button class="action-btn edit" onclick="editItemPrompt('${data.name || ''}', ${p}, ${w}, '${u}', '${data.id || index}')">✏️ تعديل</button>
+          <button class="action-btn done" onclick="setStatusItem('${data.id || index}', 'done')">✅ تم</button>
+          <button class="action-btn cancel" onclick="setStatusItem('${data.id || index}', 'cancelled')">✕ إلغاء</button>
+          <button class="action-btn delete" onclick="deleteItemPrompt('${data.id || index}')">🗑️ حذف</button>
+        </div>
+      </div>
+    `;
+  });
+
+  const tpEl = document.getElementById('totalPrice');
+  const twEl = document.getElementById('totalWeight');
+  if(tpEl) tpEl.innerText = totalP.toFixed(2);
+  if(twEl) twEl.innerText = activeItemsCount;
+  listContainer.innerHTML = html || `<div style="text-align: center; color: var(--text-light); padding: 30px;">لا توجد مشتريات مسجلة لليوم. ابدأ بإضافة مادة جديدة!</div>`;
+};
+
+window.editItemPrompt = function(currentName, currentPrice, currentWeight, currentUnit, itemId) {
+  const newName = prompt("تعديل اسم المادة:", currentName);
+  if (newName === null) return;
+  const newPrice = prompt("تعديل السعر ($):", currentPrice);
+  if (newPrice === null) return;
+  const newWeight = prompt("تعديل الكمية (الرقم):", currentWeight);
+  if (newWeight === null) return;
+  const newUnitChoice = prompt("اختر وحدة القياس:\n1: كغ\n2: ليتر\n3: علبه\n4: ربطة\n5: قطعة", currentUnit || "1");
+  if (newUnitChoice === null) return;
+
+  const newUnit = parseUnitChoice(newUnitChoice);
+
+  allItemsCache = allItemsCache.map(item => {
+    if (item.id === itemId || item.name === currentName) {
+      return { 
+        ...item, 
+        name: newName.trim(), 
+        price: parseFloat(newPrice) || 0, 
+        weight: parseFloat(newWeight) || 1,
+        unit: newUnit 
+      };
+    }
+    return item;
+  });
+  saveTodayLocalItems();
+  window.renderItemsList(allItemsCache);
+};
+
+window.setStatusItem = function(itemId, newStatus) {
+  allItemsCache = allItemsCache.map(item => {
+    if (item.id === itemId) {
+      const currentStatus = item.status || 'active';
+      const targetStatus = currentStatus === newStatus ? 'active' : newStatus;
+      return { ...item, status: targetStatus };
+    }
+    return item;
+  });
+  saveTodayLocalItems();
+  window.renderItemsList(allItemsCache);
+};
+
+window.deleteItemPrompt = function(itemId) {
+  if (confirm("هل أنت متأكد من حذف هذه المادة نهائياً؟")) {
+    allItemsCache = allItemsCache.filter(item => item.id !== itemId);
+    saveTodayLocalItems();
+    window.renderItemsList(allItemsCache);
+  }
+};
+
+window.filterTodayItems = function() {
+  const searchInput = document.getElementById('searchInput');
+  const keyword = searchInput ? searchInput.value.trim().toLowerCase() : "";
+  const filtered = allItemsCache.filter(item => (item.name || '').toLowerCase().includes(keyword));
+  window.renderItemsList(filtered);
+};
+
+window.downloadPDF = function() {
+  const monthSelect = document.getElementById('monthSelect');
+  const monthName = monthSelect.options[monthSelect.selectedIndex].text;
+  const year = document.getElementById('yearSelect').value;
+  const element = document.getElementById('monthlyReportPrintable');
+  
+  html2pdf().set({
+    margin: 10,
+    filename: `أرشيف_بيتنا_${monthName}_${year}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(element).save();
+};
+
+window.loadSelectedMonthData = function() {
   const monthSelect = document.getElementById('monthSelect');
   const monthName = monthSelect.options[monthSelect.selectedIndex].text;
   const targetMonth = parseInt(monthSelect.value);
   const targetYear = parseInt(document.getElementById('yearSelect').value);
   const container = document.getElementById('monthlyContent');
 
-  container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 10px;">جارِ تحميل السجلات من السحابة...</p>`;
+  if(container) container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 10px;">جارِ جلب الأرشيف...</p>`;
 
+  let archive = [];
   try {
-    const querySnapshot = await getDocs(collection(db, "items"));
-    let totalMonthPrice = 0;
-    let itemsHtml = "";
+    archive = JSON.parse(localStorage.getItem('baytna_archive_list') || '[]');
+  } catch(e) { archive = []; }
 
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (data.date) {
-        const itemDate = new Date(data.date);
-        if (itemDate.getMonth() + 1 === targetMonth && itemDate.getFullYear() === targetYear) {
-          const itemTotal = (parseFloat(data.price) || 0) * (parseFloat(data.weight) || 1);
-          totalMonthPrice += itemTotal;
-          itemsHtml += `
-            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F5F1EA; font-size: 14px;">
-              <span><b>${data.name || 'مادة'}</b> (${data.weight || 1} كغ)</span>
-              <b style="color: #B87B3A;">${itemTotal.toFixed(2)} $</b>
-            </div>
-          `;
-        }
-      }
-    });
+  let monthItemsList = [];
+  archive.forEach((data) => {
+    let itemDate = new Date(data.timestamp || Date.now());
+    if (itemDate.getMonth() + 1 === targetMonth && itemDate.getFullYear() === targetYear) {
+      monthItemsList.push(data);
+    }
+  });
 
-    container.innerHTML = `
-      <div style="background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; padding: 16px; border-radius: 14px; text-align: center; margin-bottom: 12px;">
-        <div style="font-size: 13px; opacity: 0.9;">تقرير شهر ${monthName} ${targetYear}</div>
-        <div style="font-size: 26px; font-weight: 700; margin-top: 4px;">${totalMonthPrice.toFixed(2)} $</div>
-      </div>
-      <div style="max-height: 220px; overflow-y: auto; padding: 4px;">
-        ${itemsHtml || '<p style="text-align: center; color: var(--text-light); font-size: 13px; padding: 15px;">لا توجد مشتريات مسجلة في هذا الشهر.</p>'}
+  window.currentMonthCache = monthItemsList;
+  renderMonthlyItemsView();
+};
+
+window.renderMonthlyItemsView = function() {
+  const container = document.getElementById('monthlyContent');
+  if (!container) return;
+
+  const monthSelect = document.getElementById('monthSelect');
+  const monthName = monthSelect.options[monthSelect.selectedIndex].text;
+  const targetYear = document.getElementById('yearSelect').value;
+
+  let totalMonthPrice = 0;
+  let itemsHtml = "";
+
+  window.currentMonthCache.forEach((data, idx) => {
+    const itemTotal = (parseFloat(data.price) || 0) * (parseFloat(data.weight) || 1);
+    const unit = data.unit || 'كغ';
+    totalMonthPrice += itemTotal;
+    itemsHtml += `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #F5F1EA; font-size: 14px;">
+        <div>
+          <span><b>${data.name || 'مادة'}</b> (${data.weight || 1} ${unit})</span>
+          <div style="font-size: 11px; color: var(--primary-dark); margin-top: 2px;">📅 ${data.formattedDate || data.archivedDate || ''}</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <b style="color: #B87B3A;">${itemTotal.toFixed(2)} $</b>
+          <button onclick="deleteArchiveItem(${idx})" style="padding: 4px 8px; font-size: 12px; background: #FFF5F3; border: 1px solid #F0D5CF; color: var(--danger); border-radius: 6px; cursor: pointer;" title="حذف">🗑️</button>
+        </div>
       </div>
     `;
-  } catch (err) {
-    container.innerHTML = `<p style="text-align: center; color: var(--danger); font-size: 13px; padding: 10px;">حدث خطأ أثناء جلب البيانات.</p>`;
+  });
+
+  container.innerHTML = `
+    <div style="background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; padding: 16px; border-radius: 14px; text-align: center; margin-bottom: 12px;">
+      <div style="font-size: 13px; opacity: 0.9;">أرشيف شهر ${monthName} ${targetYear}</div>
+      <div style="font-size: 26px; font-weight: 700; margin-top: 4px;">${totalMonthPrice.toFixed(2)} $</div>
+    </div>
+    <div style="max-height: 220px; overflow-y: auto; padding: 4px;">
+      ${itemsHtml || '<p style="text-align: center; color: var(--text-light); font-size: 13px; padding: 15px;">لا توجد مواد مؤرشفة في هذا الشهر.</p>'}
+    </div>
+  `;
+};
+
+window.currentMonthCache = [];
+
+window.deleteArchiveItem = function(index) {
+  if (confirm("هل أنت متأكد من حذف هذه المادة من الأرشيف؟")) {
+    window.currentMonthCache.splice(index, 1);
+    localStorage.setItem('baytna_archive_list', JSON.stringify(window.currentMonthCache));
+    renderMonthlyItemsView();
   }
 };
 
-window.downloadPDF = () => {
-  const monthSelect = document.getElementById('monthSelect');
-  const monthName = monthSelect.options[monthSelect.selectedIndex].text;
-  const year = document.getElementById('yearSelect').value;
-  const element = document.getElementById('monthlyReportPrintable');
-  
-  const opt = {
-    margin:       10,
-    filename:     `تقرير_بيتنا_${monthName}_${year}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-};
-
-const savedUser = localStorage.getItem('baytna_user');
-if(savedUser) {
-  document.getElementById('usernameDisplay').innerText = savedUser;
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('homeScreen').classList.remove('hidden');
-}
+window.addEventListener('DOMContentLoaded', () => {
+  const savedUser = localStorage.getItem('baytna_user');
+  if(savedUser) {
+    const userDisplay = document.getElementById('usernameDisplay');
+    if(userDisplay) userDisplay.innerText = savedUser;
+    const loginScr = document.getElementById('loginScreen');
+    const homeScr = document.getElementById('homeScreen');
+    if(loginScr) loginScr.style.display = 'none';
+    if(homeScr) homeScr.style.display = 'block';
+    displayTodayHeaderInfo();
+    loadTodayLocalItems();
+  }
+});
 </script>
 </body>
 </html>
