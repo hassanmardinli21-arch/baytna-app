@@ -667,6 +667,65 @@ window.downloadPDF = function() {
   }).from(el).save();
 };
 
+// ===== الأرشفة التلقائية الآمنة عند فتح الصفحة =====
+window.autoArchiveOrphans = function() {
+  const todayStr = new Date().toDateString();
+  const orphanDays = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('baytna_items_')) {
+      const dayStr = key.replace('baytna_items_', '');
+      if (dayStr !== todayStr) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || '[]');
+          if (items.length > 0) orphanDays.push({ key, dayStr, items });
+        } catch (e) {}
+      }
+    }
+  }
+
+  if (orphanDays.length === 0) return;
+
+  const totalItems = orphanDays.reduce((s, d) => s + d.items.length, 0);
+  const msg = `يوجد ${totalItems} مادة من ${orphanDays.length} يوم سابق غير مؤرشفة:\n` +
+              orphanDays.map(d => `• ${d.dayStr} (${d.items.length} مادة)`).join('\n') +
+              `\n\nهل تريد أرشفتها الآن إلى السجل الشهري؟`;
+
+  if (!confirm(msg)) return;
+
+  let archive = [];
+  try { archive = JSON.parse(localStorage.getItem('baytna_archive_list') || '[]'); } catch (e) {}
+
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  let added = 0;
+
+  orphanDays.forEach(d => {
+    const dDate = new Date(d.dayStr);
+    const formattedDate = dDate.toLocaleDateString('ar-SY', options);
+    d.items.forEach(item => {
+      if (!archive.some(x => x.id === item.id)) {
+        archive.push({ ...item, archivedDate: formattedDate, timestamp: dDate.getTime() });
+        added++;
+      }
+    });
+    localStorage.removeItem(d.key);
+  });
+
+  localStorage.setItem('baytna_archive_list', JSON.stringify(archive));
+  localStorage.setItem('baytna_last_archive_date', todayStr);
+
+  alert(`تمت أرشفة ${added} مادة بنجاح.`);
+  if (typeof loadSelectedMonthData === 'function') loadSelectedMonthData();
+};
+
+// استدعاء الأرشفة التلقائية بعد تسجيل الدخول
+const _origDoLogin = window.doLogin;
+window.doLogin = function() {
+  _origDoLogin();
+  setTimeout(autoArchiveOrphans, 500);
+};
+
 // استعادة الجلسة تلقائياً إن وُجد مستخدم محفوظ
 (function restoreSession() {
   const saved = localStorage.getItem('baytna_user');
