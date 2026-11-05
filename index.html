@@ -16,7 +16,6 @@
     --success: #7BA77E; --success-dark: #4A7C4E;
     --warning: #D4A55C;
     --shadow: 0 2px 12px rgba(45, 58, 58, 0.06);
-    --shadow-lg: 0 8px 32px rgba(45, 58, 58, 0.12);
   }
   html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -131,6 +130,7 @@
   .item-card {
     background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px;
     box-shadow: var(--shadow); border: 1px solid var(--border);
+    transition: all 0.3s ease;
   }
   .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
   .item-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
@@ -158,6 +158,7 @@
     box-shadow: 0 8px 24px rgba(45, 58, 58, 0.35); z-index: 90;
   }
 
+  /* الحاسبة */
   .calculator-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
   .calc-screen {
     grid-column: span 4; background: #2D3A3A; color: #FFFFFF;
@@ -165,22 +166,25 @@
     min-height: 65px; display: flex; align-items: center; justify-content: flex-end; direction: ltr;
   }
   .calc-btn {
-    padding: 16px; font-size: 20px; font-weight: 700; border-radius: 14px;
+    padding: 14px; font-size: 18px; font-weight: 700; border-radius: 14px;
     border: 1.5px solid var(--border); background: var(--card); color: var(--text); cursor: pointer;
   }
   .calc-btn.op { background: #E8EEF2; color: var(--primary-dark); }
-  .calc-btn.equal { background: var(--primary); color: white; border: none; }
+  .calc-btn.equal { background: var(--primary); color: white; border: none; grid-row: span 2; }
   .calc-btn.clear { background: #FFF5F3; color: var(--danger); border-color: #F0D5CF; }
+  .calc-btn.mem { background: #F0EBE0; color: var(--text); font-size: 14px; }
 
+  /* النوافذ المنبثقة */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(45, 58, 58, 0.5);
-    backdrop-filter: blur(4px); z-index: 500; display: none; align-items: flex-end; justify-content: center;
+    backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px;
   }
   .sheet {
-    width: 100%; max-width: 560px; max-height: 90vh; background: var(--bg);
-    border-radius: 28px 28px 0 0; padding: 20px; overflow-y: auto;
+    width: 100%; max-width: 480px; background: var(--bg);
+    border-radius: 24px; padding: 24px; overflow-y: auto; max-height: 90vh;
+    box-shadow: var(--shadow-lg);
   }
-  .sheet-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .sheet-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
   .sheet-close { width: 34px; height: 34px; border-radius: 50%; background: var(--card); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .month-picker-row { display: flex; gap: 10px; margin-bottom: 16px; }
   .select-field { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); font-size: 14px; font-weight: 600; }
@@ -188,6 +192,14 @@
     width: 100%; padding: 14px; margin-top: 14px; border: none; border-radius: 14px;
     background: linear-gradient(135deg, #B87B6E 0%, #8A4238 100%); color: white; font-size: 15px; font-weight: 700; cursor: pointer;
   }
+
+  /* تحسينات نموذج الإضافة */
+  .form-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .form-group { flex: 1; }
+  .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-light); margin-bottom: 6px; }
+  .form-control { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); font-size: 15px; font-family: inherit; outline: none; }
+  .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(107, 144, 128, 0.1); }
+  .btn-submit { width: 100%; padding: 16px; border-radius: 14px; border: none; background: var(--primary); color: white; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -234,7 +246,7 @@
       </div>
     </div>
 
-    <button class="action-main-btn" onclick="addNewItemPrompt()">➕ إضافة مادة جديدة لليوم</button>
+    <button class="action-main-btn" onclick="openAddItemModal()">➕ إضافة مادة جديدة لليوم</button>
     <button class="archive-day-btn" onclick="archiveCurrentDay()">📥 أرشفة ونهاية اليوم (ترحيل للسجل وبدء يوم جديد)</button>
     <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 تصفح السجل الشهري والأرشيف وحفظ PDF</button>
 
@@ -253,6 +265,41 @@
   <button class="calc-fab" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
 </div>
 
+<!-- نافذة إضافة مادة جديدة -->
+<div id="addItemModal" class="modal-overlay">
+  <div class="sheet">
+    <div class="sheet-title">
+      <span>➕ إضافة مادة جديدة</span>
+      <button class="sheet-close" onclick="closeAddItemModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">اسم المادة</label>
+      <input type="text" id="itemNameInput" class="form-control" placeholder="مثال: تفاح أحمر">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">السعر ($)</label>
+        <input type="number" id="itemPriceInput" class="form-control" placeholder="0.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">الكمية</label>
+        <input type="number" id="itemWeightInput" class="form-control" placeholder="1">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom: 10px;">
+      <label class="form-label">وحدة القياس</label>
+      <select id="itemUnitInput" class="form-control">
+        <option value="كغ">كغ</option>
+        <option value="ليتر">ليتر</option>
+        <option value="علبه">علبه</option>
+        <option value="ربطة">ربطة</option>
+        <option value="قطعة">قطعة</option>
+      </select>
+    </div>
+    <button class="btn-submit" onclick="submitNewItem()">حفظ المادة</button>
+  </div>
+</div>
+
 <!-- نافذة الآلة الحاسبة -->
 <div id="calculatorModal" class="modal-overlay">
   <div class="sheet">
@@ -262,7 +309,13 @@
     </div>
     <div class="calculator-grid">
       <div class="calc-screen" id="calcScreen">0</div>
+      
+      <button class="calc-btn mem" onclick="calcMemory('MC')">MC</button>
+      <button class="calc-btn mem" onclick="calcMemory('MR')">MR</button>
+      <button class="calc-btn mem" onclick="calcMemory('M+')">M+</button>
       <button class="calc-btn clear" onclick="clearCalc()">C</button>
+
+      <button class="calc-btn" onclick="deleteCalcChar()">⌫</button>
       <button class="calc-btn op" onclick="pressCalc('/')">÷</button>
       <button class="calc-btn op" onclick="pressCalc('*')">×</button>
       <button class="calc-btn op" onclick="pressCalc('-')">-</button>
@@ -275,7 +328,7 @@
       <button class="calc-btn" onclick="pressCalc('4')">4</button>
       <button class="calc-btn" onclick="pressCalc('5')">5</button>
       <button class="calc-btn" onclick="pressCalc('6')">6</button>
-      <button class="calc-btn equal" onclick="calculateResult()" style="grid-row: span 2;">=</button>
+      <button class="calc-btn equal" onclick="calculateResult()">=</button>
 
       <button class="calc-btn" onclick="pressCalc('1')">1</button>
       <button class="calc-btn" onclick="pressCalc('2')">2</button>
@@ -362,16 +415,50 @@ window.logout = function() {
   if (loginScr) loginScr.style.display = 'flex';
 };
 
-function parseUnitChoice(choice) {
-  if (!choice) return "كغ";
-  const str = choice.toString().trim();
-  if (str === "1" || str.includes("كغ")) return "كغ";
-  if (str === "2" || str.includes("ليتر")) return "ليتر";
-  if (str === "3" || str.includes("علب")) return "علبه";
-  if (str === "4" || str.includes("ربط")) return "ربطة";
-  if (str === "5" || str.includes("قطعة")) return "قطعة";
-  return str || "كغ";
-}
+// دوال نموذج الإضافة الجديد
+window.openAddItemModal = function() {
+  document.getElementById('itemNameInput').value = '';
+  document.getElementById('itemPriceInput').value = '';
+  document.getElementById('itemWeightInput').value = '';
+  document.getElementById('itemUnitInput').value = 'كغ';
+  document.getElementById('addItemModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('itemNameInput').focus(), 100);
+};
+
+window.closeAddItemModal = function() {
+  document.getElementById('addItemModal').style.display = 'none';
+};
+
+window.submitNewItem = function() {
+  const name = document.getElementById('itemNameInput').value.trim();
+  const price = document.getElementById('itemPriceInput').value;
+  const weight = document.getElementById('itemWeightInput').value;
+  const unit = document.getElementById('itemUnitInput').value;
+
+  if (!name) {
+    alert("يرجى إدخال اسم المادة.");
+    return;
+  }
+
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate = new Date().toLocaleDateString('ar-SY', options);
+
+  const newItem = {
+    id: 'local_' + Date.now(),
+    name: name,
+    price: parseFloat(price) || 0,
+    weight: parseFloat(weight) || 1,
+    unit: unit,
+    status: 'active',
+    date: formattedDate,
+    formattedDate: formattedDate
+  };
+
+  allItemsCache.unshift(newItem);
+  saveTodayLocalItems();
+  window.renderItemsList(allItemsCache);
+  closeAddItemModal();
+};
 
 function loadTodayLocalItems() {
   const todayKey = 'baytna_items_' + new Date().toDateString();
@@ -423,80 +510,63 @@ window.archiveCurrentDay = function() {
   alert("تمت أرشفة اليوم بنجاح وأصبح لديك صفحة يوم جديد نظيفة!");
 };
 
-window.addNewItemPrompt = function() {
-  const name = prompt("أدخل اسم المادة الجديدة:");
-  if (!name || !name.trim()) return;
-
-  const price = prompt("أدخل السعر ($):", "0");
-  if (price === null) return;
-
-  const weight = prompt("أدخل الكمية (الرقم):", "1");
-  if (weight === null) return;
-
-  const unitChoice = prompt("اختر وحدة القياس:\n1: كغ\n2: ليتر\n3: علبه\n4: ربطة\n5: قطعة", "1");
-  if (unitChoice === null) return;
-
-  const unit = parseUnitChoice(unitChoice);
-
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate = new Date().toLocaleDateString('ar-SY', options);
-
-  const newItem = {
-    id: 'local_' + Date.now(),
-    name: name.trim(),
-    price: parseFloat(price) || 0,
-    weight: parseFloat(weight) || 1,
-    unit: unit,
-    status: 'active',
-    date: formattedDate,
-    formattedDate: formattedDate
-  };
-
-  allItemsCache.unshift(newItem);
-  saveTodayLocalItems();
-  window.renderItemsList(allItemsCache);
-};
-
+// ===== دوال الآلة الحاسبة =====
 let calcExpression = "";
+let calcMemoryValue = 0;
+
 window.openCalculator = function() {
-  const m = document.getElementById('calculatorModal');
-  if (m) m.style.display = 'flex';
+  document.getElementById('calculatorModal').style.display = 'flex';
 };
 window.closeCalculator = function() {
-  const m = document.getElementById('calculatorModal');
-  if (m) m.style.display = 'none';
+  document.getElementById('calculatorModal').style.display = 'none';
 };
 window.pressCalc = function(val) {
   calcExpression += val;
-  const s = document.getElementById('calcScreen');
-  if (s) s.innerText = calcExpression;
+  document.getElementById('calcScreen').innerText = calcExpression;
 };
 window.clearCalc = function() {
   calcExpression = "";
-  const s = document.getElementById('calcScreen');
-  if (s) s.innerText = "0";
+  document.getElementById('calcScreen').innerText = "0";
+};
+window.deleteCalcChar = function() {
+  calcExpression = calcExpression.slice(0, -1);
+  document.getElementById('calcScreen').innerText = calcExpression || "0";
 };
 window.calculateResult = function() {
   try {
     let res = eval(calcExpression);
-    const s = document.getElementById('calcScreen');
-    if (s) s.innerText = res;
+    document.getElementById('calcScreen').innerText = res;
     calcExpression = res.toString();
   } catch (e) {
-    const s = document.getElementById('calcScreen');
-    if (s) s.innerText = "خطأ";
+    document.getElementById('calcScreen').innerText = "خطأ";
     calcExpression = "";
+  }
+};
+window.calcMemory = function(action) {
+  const s = document.getElementById('calcScreen');
+  if (action === 'MC') {
+    calcMemoryValue = 0;
+    s.innerText = "0";
+    calcExpression = "";
+  } else if (action === 'MR') {
+    calcExpression += calcMemoryValue.toString();
+    s.innerText = calcExpression;
+  } else if (action === 'M+') {
+    try {
+      const currentVal = eval(calcExpression) || 0;
+      calcMemoryValue += currentVal;
+      s.innerText = "تم الحفظ";
+      setTimeout(() => { s.innerText = calcExpression || "0"; }, 800);
+    } catch(e) {}
   }
 };
 
 window.showMonthlyReport = function() {
-  const m = document.getElementById('monthlyModal');
-  if (m) m.style.display = 'flex';
+  document.getElementById('monthlyModal').style.display = 'flex';
   loadSelectedMonthData();
 };
 window.closeMonthlyReport = function() {
-  const m = document.getElementById('monthlyModal');
-  if (m) m.style.display = 'none';
+  document.getElementById('monthlyModal').style.display = 'none';
 };
 
 window.renderItemsList = function(items) {
@@ -528,30 +598,34 @@ window.renderItemsList = function(items) {
 
     let statusBadge = "";
     let cardStyle = "";
+    let nameStyle = "";
+    
     if (status === 'done') {
       statusBadge = ' <span style="color:var(--success-dark); font-size:12px; font-weight:700;">(✓ تم شراؤه)</span>';
-      cardStyle = 'opacity: 0.75; background: #F3F8F2;';
+      cardStyle = 'background: #E8F5E9; border-color: #7BA77E; opacity: 0.85;';
+      nameStyle = 'text-decoration: line-through; color: var(--success-dark);';
     } else if (status === 'cancelled') {
-      statusBadge = ' <span style="color:var(--danger); font-size:12px; font-weight:700; text-decoration: line-through;">(✕ ملغى)</span>';
-      cardStyle = 'opacity: 0.6; background: #FBF5F3;';
+      statusBadge = ' <span style="color:var(--danger); font-size:12px; font-weight:700;">(✕ ملغى)</span>';
+      cardStyle = 'background: #FBF5F3; border-color: #F0D5CF; opacity: 0.7;';
+      nameStyle = 'text-decoration: line-through; color: var(--danger);';
     }
 
     html += `
       <div class="item-card" style="${cardStyle}">
         <div class="item-header">
           <div>
-            <div class="item-name">${data.name}${statusBadge}</div>
+            <div class="item-name" style="${nameStyle}">${data.name}${statusBadge}</div>
             <div class="item-meta">
               <span>${data.formattedDate || data.date || ''}</span>
-              <span class="item-badge">${u}</span>
+              <span class="item-badge" style="background: #FFF; border: 1px solid #CCC;">${u}</span>
             </div>
           </div>
         </div>
         <div class="item-price-info">
-          <span class="item-price-badge">${p.toFixed(2)} $ × ${w} ${u}</span>
-          <span class="item-total-badge">${sub.toFixed(2)} $</span>
+          <span class="item-price-badge" style="background: #FFF;">${p.toFixed(2)} $ × ${w} ${u}</span>
+          <span class="item-total-badge" style="${status==='done'?'background:#4A7C4E;':''}">${sub.toFixed(2)} $</span>
         </div>
-        <div class="item-actions">
+        <div class="item-actions" style="border-top-color: ${status==='done'?'#C8E6C9':'var(--border)'};">
           <button class="action-btn edit" onclick="editItem('${data.id}')">تعديل</button>
           <button class="action-btn done" onclick="markItemDone('${data.id}')">تم الشراء</button>
           <button class="action-btn cancel" onclick="cancelItem('${data.id}')">إلغاء</button>
@@ -579,6 +653,7 @@ window.filterTodayItems = function() {
 window.editItem = function(id) {
   const item = allItemsCache.find(i => i.id === id);
   if (!item) return;
+  // للتبسيط، سنستخدم prompt هنا أيضاً، لكن يمكن مستقبلاً تحويلها لنموذج مثل نموذج الإضافة
   const name = prompt("اسم المادة:", item.name);
   if (name === null) return;
   const price = prompt("السعر ($):", item.price);
@@ -667,7 +742,7 @@ window.downloadPDF = function() {
   }).from(el).save();
 };
 
-// ===== الأرشفة التلقائية الآمنة عند فتح الصفحة =====
+// ===== الأرشفة التلقائية الآمنة =====
 window.autoArchiveOrphans = function() {
   const todayStr = new Date().toDateString();
   const orphanDays = [];
@@ -726,7 +801,6 @@ window.doLogin = function() {
   setTimeout(autoArchiveOrphans, 500);
 };
 
-// استعادة الجلسة تلقائياً إن وُجد مستخدم محفوظ
 (function restoreSession() {
   const saved = localStorage.getItem('baytna_user');
   if (saved) {
