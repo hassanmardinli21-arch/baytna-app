@@ -106,24 +106,28 @@
 </head>
 <body>
 
-<!-- شاشة تسجيل الدخول -->
+<!-- شاشة تسجيل الدخول (بالبريد وكلمة المرور) -->
 <div id="loginScreen" class="login-wrap">
   <div class="login-logo">🏠</div>
   <div class="login-title">بيتنا</div>
-  <div class="login-sub">إدارة مخزون المنزل بذكاء</div>
+  <div class="login-sub">سجل دخولك لمزامنة بياناتك</div>
   <div class="login-form">
     <div class="input-group">
-      <label class="input-label">اسمك</label>
-      <input type="text" id="usernameInput" class="input-field" value="حسان" autocomplete="off">
+      <label class="input-label">البريد الإلكتروني</label>
+      <input type="email" id="emailInput" class="input-field" placeholder="example@gmail.com" autocomplete="off" style="direction: ltr; text-align: left;">
     </div>
-    <button class="btn" type="button" onclick="doLogin()">دخول</button>
+    <div class="input-group">
+      <label class="input-label">كلمة المرور</label>
+      <input type="password" id="passwordInput" class="input-field" placeholder="••••••••" style="direction: ltr; text-align: left;">
+    </div>
+    <button class="btn" type="button" onclick="doLogin()" id="loginBtn">دخول / إنشاء حساب</button>
   </div>
 </div>
 
 <!-- الشاشة الرئيسية -->
 <div id="homeScreen" style="display: none;">
   <div class="app-header">
-    <div class="header-title">بيت <span id="usernameDisplay">حسان</span> <span>🏠</span></div>
+    <div class="header-title">بيت <span id="usernameDisplay">المستخدم</span> <span>🏠</span></div>
     <div class="header-actions">
       <span id="syncBadge" class="sync-badge syncing">⏳ جارٍ</span>
       <button class="icon-btn" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
@@ -242,7 +246,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- إعدادات مشروعك الجديد baytna ---
@@ -264,7 +268,6 @@ let allItemsCache = [];
 let currentUserUid = null;
 let unsubscribeSnapshot = null;
 const ARCHIVE_KEY = 'baytna_archive_list';
-const USER_PREFIX = 'baytna_user_';
 
 function todayKey() { return 'baytna_items_' + new Date().toDateString(); }
 
@@ -365,51 +368,83 @@ function startCloudListener() {
   });
 }
 
-/* ============ تسجيل الدخول المجهول ============ */
-async function ensureAnonymousAuth() {
-  return new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUserUid = user.uid;
-        setSyncBadge('online');
-        startCloudListener();
-        resolve(user);
-      } else {
-        signInAnonymously(auth).catch(e => {
-          console.error('auth error', e);
-          setSyncBadge('offline');
-          resolve(null);
-        });
-      }
-    });
-  });
-}
-
-/* ============ دوال واجهة المستخدم ============ */
+/* ============ تسجيل الدخول بالبريد الإلكتروني ============ */
 window.doLogin = async function() {
-  const nameInput = document.getElementById('usernameInput');
-  const name = nameInput ? nameInput.value.trim() : "حسان";
-  localStorage.setItem(USER_PREFIX + 'name', name);
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const btn = document.getElementById('loginBtn');
 
-  const userDisplay = document.getElementById('usernameDisplay');
-  if (userDisplay) userDisplay.innerText = name;
+  if (!email || !password) { alert("يرجى إدخال البريد الإلكتروني وكلمة المرور."); return; }
+  if (password.length < 6) { alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل."); return; }
 
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('homeScreen').style.display = 'block';
+  btn.disabled = true;
+  btn.innerText = "جاري التحقق...";
 
-  displayTodayHeaderInfo();
-  setSyncBadge('syncing');
-
-  await ensureAnonymousAuth();
-  loadTodayLocalItems();
+  try {
+    // نحاول تسجيل الدخول أولاً
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    // إذا لم يوجد الحساب، نقوم بإنشائه تلقائياً
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } catch (createError) {
+        alert("خطأ في إنشاء الحساب: " + createError.message);
+        btn.disabled = false;
+        btn.innerText = "دخول / إنشاء حساب";
+        return;
+      }
+    } else {
+      alert("خطأ في تسجيل الدخول: " + error.message);
+      btn.disabled = false;
+      btn.innerText = "دخول / إنشاء حساب";
+      return;
+    }
+  }
 };
 
+/* ============ حالة المصادقة ============ */
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUserUid = user.uid;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('homeScreen').style.display = 'block';
+    document.getElementById('usernameDisplay').innerText = user.email.split('@')[0];
+    
+    displayTodayHeaderInfo();
+    setSyncBadge('syncing');
+    
+    startCloudListener();
+    loadTodayLocalItems();
+    
+    // سحب الأرشيف من السحابة عند الدخول
+    getDocs(collection(db, "baytna_archives")).then(snap => {
+      snap.forEach(docSnap => {
+        if (docSnap.id === currentUserUid) {
+           const cloudArchive = docSnap.data().list || [];
+           const localArchive = readArchive();
+           if (cloudArchive.length > 0) {
+              // نأخذ السحابة كمرجع أساسي
+              writeArchive(cloudArchive);
+           }
+        }
+      });
+    });
+
+  } else {
+    currentUserUid = null;
+    if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    document.getElementById('homeScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    setSyncBadge('offline');
+    document.getElementById('loginBtn').disabled = false;
+    document.getElementById('loginBtn').innerText = "دخول / إنشاء حساب";
+    document.getElementById('passwordInput').value = '';
+  }
+});
+
 window.logout = function() {
-  if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
-  localStorage.removeItem(USER_PREFIX + 'name');
-  document.getElementById('homeScreen').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  setSyncBadge('offline');
+  signOut(auth);
 };
 
 window.openAddItemModal = function() {
@@ -564,17 +599,6 @@ window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split(
 window.moveDayToAnotherDate = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`); if (!input) return; const parts = input.split('-').map(Number); if (parts.length !== 3 || parts.some(isNaN)) return; const [ny, nm, nd] = parts; const newDate = new Date(ny, nm - 1, nd); if (isNaN(newDate.getTime())) return; const archive = readArchive(); const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const newBaseTs = newDate.getTime(); let count = 0; archive.forEach(it => { if (!it.timestamp) return; const t = new Date(it.timestamp); if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) { it.timestamp = newBaseTs + count; it.archivedDate = newLabel; it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp; count++; } }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
 window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
 
-/* ============ بدء التطبيق ============ */
-(function init() {
-  displayTodayHeaderInfo();
-  const savedName = localStorage.getItem(USER_PREFIX + 'name');
-  if (savedName) {
-    document.getElementById('usernameInput').value = savedName;
-    window.doLogin();
-  } else {
-    setSyncBadge('offline');
-  }
-})();
 </script>
 </body>
 </html>
