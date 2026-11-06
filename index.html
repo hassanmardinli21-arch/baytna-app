@@ -16,6 +16,7 @@
     --success: #7BA77E; --success-dark: #4A7C4E;
     --warning: #D4A55C;
     --shadow: 0 2px 12px rgba(45, 58, 58, 0.06);
+    --shadow-lg: 0 12px 40px rgba(45, 58, 58, 0.18);
   }
   html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -158,7 +159,6 @@
     box-shadow: 0 8px 24px rgba(45, 58, 58, 0.35); z-index: 90;
   }
 
-  /* الحاسبة */
   .calculator-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
   .calc-screen {
     grid-column: span 4; background: #2D3A3A; color: #FFFFFF;
@@ -174,7 +174,6 @@
   .calc-btn.clear { background: #FFF5F3; color: var(--danger); border-color: #F0D5CF; }
   .calc-btn.mem { background: #F0EBE0; color: var(--text); font-size: 14px; }
 
-  /* النوافذ المنبثقة */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(45, 58, 58, 0.5);
     backdrop-filter: blur(4px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px;
@@ -193,13 +192,32 @@
     background: linear-gradient(135deg, #B87B6E 0%, #8A4238 100%); color: white; font-size: 15px; font-weight: 700; cursor: pointer;
   }
 
-  /* تحسينات نموذج الإضافة */
   .form-row { display: flex; gap: 12px; margin-bottom: 16px; }
   .form-group { flex: 1; }
   .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-light); margin-bottom: 6px; }
   .form-control { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border); font-size: 15px; font-family: inherit; outline: none; }
   .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(107, 144, 128, 0.1); }
   .btn-submit { width: 100%; padding: 16px; border-radius: 14px; border: none; background: var(--primary); color: white; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+  .btn-danger { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--danger); background: #FFF5F3; color: var(--danger); font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+
+  .day-group { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .day-group-header { background: #F0EBE0; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--primary-dark); gap: 8px; flex-wrap: wrap; }
+  .day-group-header .day-total { color: var(--primary-dark); }
+  .day-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+  .mini-btn { padding: 4px 9px; border-radius: 7px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text); }
+  .mini-btn.del { color: var(--danger); border-color: #E5C2BB; }
+  .mini-btn.move { color: var(--primary-dark); border-color: var(--primary); }
+  .mini-btn.edit { color: var(--warning); border-color: #E8CFA0; }
+  .day-group-body { padding: 6px 12px; }
+  .day-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 6px; }
+  .day-row:last-child { border-bottom: none; }
+  .day-row .row-label { flex: 1; }
+  .row-actions { display: flex; gap: 4px; }
+  .row-actions button { padding: 3px 7px; font-size: 11px; }
+  .month-grand-total { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 10px; border-top: 2px solid var(--primary); font-weight: 700; font-size: 15px; }
+
+  /* نافذة تعديل مادة */
+  #editItemModal .sheet { max-width: 420px; }
 </style>
 </head>
 <body>
@@ -240,8 +258,16 @@
       </div>
       <div class="summary-stats">
         <div class="summary-stat">
-          <div class="summary-stat-label">📦 عدد المواد اليوم</div>
+          <div class="summary-stat-label">📦 إجمالي المواد</div>
           <div class="summary-stat-value"><span id="totalWeight">0</span> <small style="font-size:12px;">مادة</small></div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-stat-label">✅ مكتملة</div>
+          <div class="summary-stat-value"><span id="doneCount">0</span></div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-stat-label">⏳ معلّقة</div>
+          <div class="summary-stat-value"><span id="activeCount">0</span></div>
         </div>
       </div>
     </div>
@@ -300,6 +326,43 @@
   </div>
 </div>
 
+<!-- نافذة تعديل مادة في السجل -->
+<div id="editItemModal" class="modal-overlay">
+  <div class="sheet">
+    <div class="sheet-title">
+      <span>✏️ تعديل مادة في السجل</span>
+      <button class="sheet-close" onclick="closeEditItemModal()">✕</button>
+    </div>
+    <input type="hidden" id="editItemArchId">
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">اسم المادة</label>
+      <input type="text" id="editItemName" class="form-control">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">السعر ($)</label>
+        <input type="number" id="editItemPrice" class="form-control" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">الكمية</label>
+        <input type="number" id="editItemWeight" class="form-control">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px;">
+      <label class="form-label">وحدة القياس</label>
+      <select id="editItemUnit" class="form-control">
+        <option value="كغ">كغ</option>
+        <option value="ليتر">ليتر</option>
+        <option value="علبه">علبه</option>
+        <option value="ربطة">ربطة</option>
+        <option value="قطعة">قطعة</option>
+      </select>
+    </div>
+    <button class="btn-submit" onclick="saveEditedArchiveItem()">💾 حفظ التعديل</button>
+    <button class="btn-danger" onclick="deleteArchiveItemFromModal()">🗑️ حذف هذه المادة نهائياً</button>
+  </div>
+</div>
+
 <!-- نافذة الآلة الحاسبة -->
 <div id="calculatorModal" class="modal-overlay">
   <div class="sheet">
@@ -309,31 +372,25 @@
     </div>
     <div class="calculator-grid">
       <div class="calc-screen" id="calcScreen">0</div>
-      
       <button class="calc-btn mem" onclick="calcMemory('MC')">MC</button>
       <button class="calc-btn mem" onclick="calcMemory('MR')">MR</button>
       <button class="calc-btn mem" onclick="calcMemory('M+')">M+</button>
       <button class="calc-btn clear" onclick="clearCalc()">C</button>
-
       <button class="calc-btn" onclick="deleteCalcChar()">⌫</button>
       <button class="calc-btn op" onclick="pressCalc('/')">÷</button>
       <button class="calc-btn op" onclick="pressCalc('*')">×</button>
       <button class="calc-btn op" onclick="pressCalc('-')">-</button>
-
       <button class="calc-btn" onclick="pressCalc('7')">7</button>
       <button class="calc-btn" onclick="pressCalc('8')">8</button>
       <button class="calc-btn" onclick="pressCalc('9')">9</button>
       <button class="calc-btn op" onclick="pressCalc('+')">+</button>
-
       <button class="calc-btn" onclick="pressCalc('4')">4</button>
       <button class="calc-btn" onclick="pressCalc('5')">5</button>
       <button class="calc-btn" onclick="pressCalc('6')">6</button>
       <button class="calc-btn equal" onclick="calculateResult()">=</button>
-
       <button class="calc-btn" onclick="pressCalc('1')">1</button>
       <button class="calc-btn" onclick="pressCalc('2')">2</button>
       <button class="calc-btn" onclick="pressCalc('3')">3</button>
-
       <button class="calc-btn" onclick="pressCalc('0')" style="grid-column: span 2;">0</button>
       <button class="calc-btn" onclick="pressCalc('.')">.</button>
     </div>
@@ -381,6 +438,9 @@
 
 <script>
 let allItemsCache = [];
+const ARCHIVE_KEY = 'baytna_archive_list';
+
+function todayKey() { return 'baytna_items_' + new Date().toDateString(); }
 
 function displayTodayHeaderInfo() {
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -389,6 +449,42 @@ function displayTodayHeaderInfo() {
   if (el) el.innerText = todayStr;
 }
 
+function readArchive() {
+  try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+function writeArchive(list) {
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(list));
+}
+
+/* ============ الأرشفة الموحّدة (تمنع التكرار) ============ */
+function archiveItemsToStore(items, dateObj, silent) {
+  if (!items || items.length === 0) return 0;
+  const archive = readArchive();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const formattedDate = dateObj.toLocaleDateString('ar-SY', options);
+  const baseTs = dateObj.getTime();
+  let added = 0;
+
+  items.forEach((item, idx) => {
+    const archId = 'arch_' + item.id + '_' + baseTs;
+    if (archive.some(x => x.archId === archId)) return;
+    archive.push({
+      ...item,
+      archId,
+      archivedDate: formattedDate,
+      timestamp: baseTs + idx
+    });
+    added++;
+  });
+
+  writeArchive(archive);
+  localStorage.setItem('baytna_last_archive_date', new Date().toDateString());
+  if (!silent && added > 0) console.log(`تمت أرشفة ${added} مادة.`);
+  return added;
+}
+
+/* ============ تسجيل الدخول ============ */
 window.doLogin = function() {
   const nameInput = document.getElementById('usernameInput');
   const name = nameInput ? nameInput.value.trim() : "حسان";
@@ -399,12 +495,15 @@ window.doLogin = function() {
 
   const loginScr = document.getElementById('loginScreen');
   const homeScr = document.getElementById('homeScreen');
-
   if (loginScr) loginScr.style.display = 'none';
   if (homeScr) homeScr.style.display = 'block';
 
   displayTodayHeaderInfo();
   loadTodayLocalItems();
+
+  setTimeout(() => {
+    if (typeof autoArchiveOrphans === 'function') autoArchiveOrphans(true);
+  }, 400);
 };
 
 window.logout = function() {
@@ -415,7 +514,7 @@ window.logout = function() {
   if (loginScr) loginScr.style.display = 'flex';
 };
 
-// دوال نموذج الإضافة الجديد
+/* ============ نموذج الإضافة ============ */
 window.openAddItemModal = function() {
   document.getElementById('itemNameInput').value = '';
   document.getElementById('itemPriceInput').value = '';
@@ -435,10 +534,7 @@ window.submitNewItem = function() {
   const weight = document.getElementById('itemWeightInput').value;
   const unit = document.getElementById('itemUnitInput').value;
 
-  if (!name) {
-    alert("يرجى إدخال اسم المادة.");
-    return;
-  }
+  if (!name) { alert("يرجى إدخال اسم المادة."); return; }
 
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const formattedDate = new Date().toLocaleDateString('ar-SY', options);
@@ -460,78 +556,82 @@ window.submitNewItem = function() {
   closeAddItemModal();
 };
 
+/* ============ تحميل / حفظ اليوم ============ */
 function loadTodayLocalItems() {
-  const todayKey = 'baytna_items_' + new Date().toDateString();
-  const saved = localStorage.getItem(todayKey);
-  if (saved) {
-    try {
-      allItemsCache = JSON.parse(saved);
-    } catch (e) {
-      allItemsCache = [];
-    }
-  } else {
-    allItemsCache = [];
-  }
+  const saved = localStorage.getItem(todayKey());
+  try { allItemsCache = saved ? JSON.parse(saved) : []; }
+  catch (e) { allItemsCache = []; }
   window.renderItemsList(allItemsCache);
 }
 
 function saveTodayLocalItems() {
-  const todayKey = 'baytna_items_' + new Date().toDateString();
-  localStorage.setItem(todayKey, JSON.stringify(allItemsCache));
+  localStorage.setItem(todayKey(), JSON.stringify(allItemsCache));
 }
 
+/* ============ الأرشفة اليدوية ============ */
 window.archiveCurrentDay = function() {
   if (allItemsCache.length === 0) {
     alert("لا توجد مواد مسجلة اليوم لأرشفتها!");
     return;
   }
-  if (!confirm("هل أنت متأكد من أرشفة مشتريات اليوم وحفظها في السجل الشهري، وبدء صفحة يوم جديد؟")) return;
+  if (!confirm("هل أنت متأكد من أرشفة مشتريات اليوم في السجل الشهري، وبدء صفحة يوم جديد نظيفة؟\n(ملاحظة: تُحفظ نسخة في السجل، وتُفرَّغ صفحة اليوم)")) return;
 
-  const archiveKey = 'baytna_archive_list';
-  let archive = [];
-  try {
-    archive = JSON.parse(localStorage.getItem(archiveKey) || '[]');
-  } catch (e) { archive = []; }
-
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate = new Date().toLocaleDateString('ar-SY', options);
-
-  allItemsCache.forEach(item => {
-    archive.push({ ...item, archivedDate: formattedDate, timestamp: Date.now() });
-  });
-
-  localStorage.setItem(archiveKey, JSON.stringify(archive));
-
-  const todayKey = 'baytna_items_' + new Date().toDateString();
+  const added = archiveItemsToStore(allItemsCache, new Date(), false);
   allItemsCache = [];
-  localStorage.removeItem(todayKey);
+  localStorage.removeItem(todayKey());
   window.renderItemsList(allItemsCache);
 
-  alert("تمت أرشفة اليوم بنجاح وأصبح لديك صفحة يوم جديد نظيفة!");
+  alert(`تمت أرشفة ${added} مادة بنجاح وأصبح لديك صفحة يوم جديد نظيفة!`);
 };
 
-// ===== دوال الآلة الحاسبة =====
+/* ============ الأرشفة التلقائية للأيام المعلّقة ============ */
+window.autoArchiveOrphans = function(silent) {
+  const tKey = new Date().toDateString();
+  const orphanDays = [];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('baytna_items_')) {
+      const dayStr = key.replace('baytna_items_', '');
+      if (dayStr !== tKey) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || '[]');
+          if (items.length > 0) orphanDays.push({ key, dayStr, items });
+        } catch (e) {}
+      }
+    }
+  }
+
+  if (orphanDays.length === 0) return;
+  const totalItems = orphanDays.reduce((s, d) => s + d.items.length, 0);
+
+  if (!silent) {
+    const msg = `يوجد ${totalItems} مادة من ${orphanDays.length} يوم سابق غير مؤرشفة:\n` +
+                orphanDays.map(d => `• ${d.dayStr} (${d.items.length} مادة)`).join('\n') +
+                `\n\nهل تريد أرشفتها الآن إلى السجل الشهري؟`;
+    if (!confirm(msg)) return;
+  }
+
+  let added = 0;
+  orphanDays.forEach(d => {
+    const dDate = new Date(d.dayStr);
+    added += archiveItemsToStore(d.items, dDate, silent);
+    localStorage.removeItem(d.key);
+  });
+
+  if (!silent) alert(`تمت أرشفة ${added} مادة بنجاح.`);
+  if (typeof loadSelectedMonthData === 'function') loadSelectedMonthData();
+};
+
+/* ============ الحاسبة ============ */
 let calcExpression = "";
 let calcMemoryValue = 0;
 
-window.openCalculator = function() {
-  document.getElementById('calculatorModal').style.display = 'flex';
-};
-window.closeCalculator = function() {
-  document.getElementById('calculatorModal').style.display = 'none';
-};
-window.pressCalc = function(val) {
-  calcExpression += val;
-  document.getElementById('calcScreen').innerText = calcExpression;
-};
-window.clearCalc = function() {
-  calcExpression = "";
-  document.getElementById('calcScreen').innerText = "0";
-};
-window.deleteCalcChar = function() {
-  calcExpression = calcExpression.slice(0, -1);
-  document.getElementById('calcScreen').innerText = calcExpression || "0";
-};
+window.openCalculator = function() { document.getElementById('calculatorModal').style.display = 'flex'; };
+window.closeCalculator = function() { document.getElementById('calculatorModal').style.display = 'none'; };
+window.pressCalc = function(val) { calcExpression += val; document.getElementById('calcScreen').innerText = calcExpression; };
+window.clearCalc = function() { calcExpression = ""; document.getElementById('calcScreen').innerText = "0"; };
+window.deleteCalcChar = function() { calcExpression = calcExpression.slice(0, -1); document.getElementById('calcScreen').innerText = calcExpression || "0"; };
 window.calculateResult = function() {
   try {
     let res = eval(calcExpression);
@@ -544,14 +644,9 @@ window.calculateResult = function() {
 };
 window.calcMemory = function(action) {
   const s = document.getElementById('calcScreen');
-  if (action === 'MC') {
-    calcMemoryValue = 0;
-    s.innerText = "0";
-    calcExpression = "";
-  } else if (action === 'MR') {
-    calcExpression += calcMemoryValue.toString();
-    s.innerText = calcExpression;
-  } else if (action === 'M+') {
+  if (action === 'MC') { calcMemoryValue = 0; s.innerText = "0"; calcExpression = ""; }
+  else if (action === 'MR') { calcExpression += calcMemoryValue.toString(); s.innerText = calcExpression; }
+  else if (action === 'M+') {
     try {
       const currentVal = eval(calcExpression) || 0;
       calcMemoryValue += currentVal;
@@ -561,26 +656,18 @@ window.calcMemory = function(action) {
   }
 };
 
-window.showMonthlyReport = function() {
-  document.getElementById('monthlyModal').style.display = 'flex';
-  loadSelectedMonthData();
-};
-window.closeMonthlyReport = function() {
-  document.getElementById('monthlyModal').style.display = 'none';
-};
-
+/* ============ عرض مواد اليوم ============ */
 window.renderItemsList = function(items) {
   const listContainer = document.getElementById('itemsList');
   if (!listContainer) return;
   let html = "";
-  let totalP = 0;
-  let activeItemsCount = 0;
+  let totalP = 0, doneCount = 0, activeCount = 0;
 
   items.sort((a, b) => {
-    const statusA = a.status || 'active';
-    const statusB = b.status || 'active';
-    if (statusA === 'active' && statusB !== 'active') return -1;
-    if (statusA !== 'active' && statusB === 'active') return 1;
+    const sa = a.status || 'active';
+    const sb = b.status || 'active';
+    if (sa === 'active' && sb !== 'active') return -1;
+    if (sa !== 'active' && sb === 'active') return 1;
     return 0;
   });
 
@@ -591,15 +678,13 @@ window.renderItemsList = function(items) {
     const status = data.status || 'active';
     const sub = p * w;
 
-    if (status === 'active') {
+    if (status !== 'cancelled') {
       totalP += sub;
-      activeItemsCount += 1;
+      if (status === 'done') doneCount++;
+      else activeCount++;
     }
 
-    let statusBadge = "";
-    let cardStyle = "";
-    let nameStyle = "";
-    
+    let statusBadge = "", cardStyle = "", nameStyle = "";
     if (status === 'done') {
       statusBadge = ' <span style="color:var(--success-dark); font-size:12px; font-weight:700;">(✓ تم شراؤه)</span>';
       cardStyle = 'background: #E8F5E9; border-color: #7BA77E; opacity: 0.85;';
@@ -639,8 +724,12 @@ window.renderItemsList = function(items) {
 
   const totalEl = document.getElementById('totalPrice');
   const weightEl = document.getElementById('totalWeight');
+  const doneEl = document.getElementById('doneCount');
+  const activeEl = document.getElementById('activeCount');
   if (totalEl) totalEl.innerText = totalP.toFixed(2);
-  if (weightEl) weightEl.innerText = activeItemsCount;
+  if (weightEl) weightEl.innerText = items.length;
+  if (doneEl) doneEl.innerText = doneCount;
+  if (activeEl) activeEl.innerText = activeCount;
 };
 
 window.filterTodayItems = function() {
@@ -650,10 +739,10 @@ window.filterTodayItems = function() {
   window.renderItemsList(filtered);
 };
 
+/* ============ إجراءات على مواد اليوم ============ */
 window.editItem = function(id) {
   const item = allItemsCache.find(i => i.id === id);
   if (!item) return;
-  // للتبسيط، سنستخدم prompt هنا أيضاً، لكن يمكن مستقبلاً تحويلها لنموذج مثل نموذج الإضافة
   const name = prompt("اسم المادة:", item.name);
   if (name === null) return;
   const price = prompt("السعر ($):", item.price);
@@ -690,14 +779,27 @@ window.deleteItem = function(id) {
   window.renderItemsList(allItemsCache);
 };
 
+/* ============ السجل الشهري ============ */
+window.showMonthlyReport = function() {
+  document.getElementById('monthlyModal').style.display = 'flex';
+  if (allItemsCache.length > 0) {
+    archiveItemsToStore(allItemsCache, new Date(), true);
+  }
+  if (typeof autoArchiveOrphans === 'function') autoArchiveOrphans(true);
+  loadSelectedMonthData();
+};
+
+window.closeMonthlyReport = function() {
+  document.getElementById('monthlyModal').style.display = 'none';
+};
+
 window.loadSelectedMonthData = function() {
   const year = parseInt(document.getElementById('yearSelect')?.value || '2026');
   const month = parseInt(document.getElementById('monthSelect')?.value || '10');
   const container = document.getElementById('monthlyContent');
   if (!container) return;
 
-  let archive = [];
-  try { archive = JSON.parse(localStorage.getItem('baytna_archive_list') || '[]'); } catch (e) {}
+  const archive = readArchive();
 
   const monthItems = archive.filter(it => {
     const t = it.timestamp ? new Date(it.timestamp) : null;
@@ -709,26 +811,168 @@ window.loadSelectedMonthData = function() {
     return;
   }
 
-  let total = 0;
-  let rows = "";
+  const byDay = {};
   monthItems.forEach(it => {
+    const t = new Date(it.timestamp);
+    const dayKey = t.getDate();
+    if (!byDay[dayKey]) byDay[dayKey] = { items: [], total: 0, label: it.archivedDate || t.toLocaleDateString('ar-SY') };
     const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1);
-    total += sub;
-    rows += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;">
-      <span>${it.name} (${it.weight} ${it.unit || 'كغ'})</span>
-      <span style="font-weight:700;">${sub.toFixed(2)} $</span>
-    </div>`;
+    byDay[dayKey].items.push(it);
+    byDay[dayKey].total += sub;
   });
 
-  container.innerHTML = `
-    <div style="font-size:15px;font-weight:700;margin-bottom:10px;color:var(--primary-dark);">
-      سجل ${month}/${year} — ${monthItems.length} مادة
-    </div>
-    ${rows}
-    <div style="display:flex;justify-content:space-between;margin-top:14px;padding-top:10px;border-top:2px solid var(--primary);font-weight:700;">
-      <span>الإجمالي</span><span>${total.toFixed(2)} $</span>
-    </div>
-  `;
+  const days = Object.keys(byDay).map(Number).sort((a, b) => a - b);
+  let grandTotal = 0;
+  let totalCount = 0;
+  let html = `<div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--primary-dark);">
+    سجل ${month}/${year} — ${monthItems.length} مادة
+  </div>`;
+
+  days.forEach(dayNum => {
+    const g = byDay[dayNum];
+    grandTotal += g.total;
+    totalCount += g.items.length;
+    const dayKeyStr = `${year}-${month}-${dayNum}`;
+    let rows = "";
+    g.items.forEach(it => {
+      const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1);
+      const statusTag = it.status === 'cancelled' ? ' <span style="color:var(--danger);font-size:11px;">(ملغى)</span>' : '';
+      rows += `<div class="day-row">
+        <span class="row-label">${it.name}${statusTag} (${it.weight} ${it.unit || 'كغ'}) — <b>${sub.toFixed(2)} $</b></span>
+        <span class="row-actions">
+          <button class="mini-btn edit" onclick="openEditArchiveItem('${it.archId}')" title="تعديل">✏️</button>
+          <button class="mini-btn del" onclick="deleteArchiveItem('${it.archId}')" title="حذف">🗑️</button>
+        </span>
+      </div>`;
+    });
+
+    html += `
+      <div class="day-group">
+        <div class="day-group-header">
+          <span>📅 ${g.label}</span>
+          <span class="day-total">${g.total.toFixed(2)} $</span>
+          <span class="day-actions">
+            <button class="mini-btn move" onclick="moveDayToAnotherDate('${dayKeyStr}')" title="نقل اليوم لتاريخ آخر">🗓️ نقل</button>
+            <button class="mini-btn del" onclick="deleteWholeDay('${dayKeyStr}')" title="حذف اليوم كاملاً">🗑️ حذف اليوم</button>
+          </span>
+        </div>
+        <div class="day-group-body">${rows}</div>
+      </div>
+    `;
+  });
+
+  html += `<div class="month-grand-total">
+    <span>الإجمالي الشهري (${totalCount} مادة)</span>
+    <span>${grandTotal.toFixed(2)} $</span>
+  </div>`;
+
+  container.innerHTML = html;
+};
+
+/* ============ تعديل / حذف مادة في السجل ============ */
+window.openEditArchiveItem = function(archId) {
+  const archive = readArchive();
+  const item = archive.find(x => x.archId === archId);
+  if (!item) { alert("لم يتم العثور على المادة في السجل."); return; }
+
+  document.getElementById('editItemArchId').value = archId;
+  document.getElementById('editItemName').value = item.name || '';
+  document.getElementById('editItemPrice').value = item.price || 0;
+  document.getElementById('editItemWeight').value = item.weight || 1;
+  document.getElementById('editItemUnit').value = item.unit || 'كغ';
+  document.getElementById('editItemModal').style.display = 'flex';
+};
+
+window.closeEditItemModal = function() {
+  document.getElementById('editItemModal').style.display = 'none';
+};
+
+window.saveEditedArchiveItem = function() {
+  const archId = document.getElementById('editItemArchId').value;
+  const name = document.getElementById('editItemName').value.trim();
+  const price = parseFloat(document.getElementById('editItemPrice').value) || 0;
+  const weight = parseFloat(document.getElementById('editItemWeight').value) || 1;
+  const unit = document.getElementById('editItemUnit').value;
+
+  if (!name) { alert("اسم المادة مطلوب."); return; }
+
+  const archive = readArchive();
+  const idx = archive.findIndex(x => x.archId === archId);
+  if (idx === -1) { alert("لم يتم العثور على المادة."); return; }
+
+  archive[idx].name = name;
+  archive[idx].price = price;
+  archive[idx].weight = weight;
+  archive[idx].unit = unit;
+  writeArchive(archive);
+
+  closeEditItemModal();
+  loadSelectedMonthData();
+};
+
+window.deleteArchiveItemFromModal = function() {
+  const archId = document.getElementById('editItemArchId').value;
+  closeEditItemModal();
+  deleteArchiveItem(archId);
+};
+
+window.deleteArchiveItem = function(archId) {
+  if (!confirm("هل تريد حذف هذه المادة نهائياً من السجل الشهري؟")) return;
+  const archive = readArchive().filter(x => x.archId !== archId);
+  writeArchive(archive);
+  loadSelectedMonthData();
+};
+
+/* ============ حذف يوم كامل / نقله ============ */
+window.deleteWholeDay = function(dayKeyStr) {
+  const [y, m, d] = dayKeyStr.split('-').map(Number);
+  if (!confirm(`هل تريد حذف جميع مواد يوم ${d}/${m}/${y} من السجل الشهري نهائياً؟`)) return;
+
+  const archive = readArchive().filter(it => {
+    if (!it.timestamp) return true;
+    const t = new Date(it.timestamp);
+    return !(t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d);
+  });
+  writeArchive(archive);
+  loadSelectedMonthData();
+  alert("تم حذف اليوم بالكامل من السجل.");
+};
+
+window.moveDayToAnotherDate = function(dayKeyStr) {
+  const [y, m, d] = dayKeyStr.split('-').map(Number);
+  const input = prompt(
+    `نقل جميع مواد يوم ${d}/${m}/${y} إلى تاريخ جديد.\nأدخل التاريخ بصيغة YYYY-MM-DD (مثال: 2026-10-15):`,
+    `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+  );
+  if (!input) return;
+
+  const parts = input.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) { alert("صيغة التاريخ غير صحيحة. استخدم YYYY-MM-DD."); return; }
+  const [ny, nm, nd] = parts;
+  const newDate = new Date(ny, nm - 1, nd);
+  if (isNaN(newDate.getTime())) { alert("تاريخ غير صالح."); return; }
+
+  const archive = readArchive();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const newLabel = newDate.toLocaleDateString('ar-SY', options);
+  const newBaseTs = newDate.getTime();
+
+  let count = 0;
+  archive.forEach(it => {
+    if (!it.timestamp) return;
+    const t = new Date(it.timestamp);
+    if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) {
+      // نعيد بناء timestamp و archId لتفادي التعارض
+      it.timestamp = newBaseTs + count;
+      it.archivedDate = newLabel;
+      it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp;
+      count++;
+    }
+  });
+
+  writeArchive(archive);
+  loadSelectedMonthData();
+  alert(`تم نقل ${count} مادة إلى ${newLabel}.`);
 };
 
 window.downloadPDF = function() {
@@ -742,65 +986,7 @@ window.downloadPDF = function() {
   }).from(el).save();
 };
 
-// ===== الأرشفة التلقائية الآمنة =====
-window.autoArchiveOrphans = function() {
-  const todayStr = new Date().toDateString();
-  const orphanDays = [];
-
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('baytna_items_')) {
-      const dayStr = key.replace('baytna_items_', '');
-      if (dayStr !== todayStr) {
-        try {
-          const items = JSON.parse(localStorage.getItem(key) || '[]');
-          if (items.length > 0) orphanDays.push({ key, dayStr, items });
-        } catch (e) {}
-      }
-    }
-  }
-
-  if (orphanDays.length === 0) return;
-
-  const totalItems = orphanDays.reduce((s, d) => s + d.items.length, 0);
-  const msg = `يوجد ${totalItems} مادة من ${orphanDays.length} يوم سابق غير مؤرشفة:\n` +
-              orphanDays.map(d => `• ${d.dayStr} (${d.items.length} مادة)`).join('\n') +
-              `\n\nهل تريد أرشفتها الآن إلى السجل الشهري؟`;
-
-  if (!confirm(msg)) return;
-
-  let archive = [];
-  try { archive = JSON.parse(localStorage.getItem('baytna_archive_list') || '[]'); } catch (e) {}
-
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  let added = 0;
-
-  orphanDays.forEach(d => {
-    const dDate = new Date(d.dayStr);
-    const formattedDate = dDate.toLocaleDateString('ar-SY', options);
-    d.items.forEach(item => {
-      if (!archive.some(x => x.id === item.id)) {
-        archive.push({ ...item, archivedDate: formattedDate, timestamp: dDate.getTime() });
-        added++;
-      }
-    });
-    localStorage.removeItem(d.key);
-  });
-
-  localStorage.setItem('baytna_archive_list', JSON.stringify(archive));
-  localStorage.setItem('baytna_last_archive_date', todayStr);
-
-  alert(`تمت أرشفة ${added} مادة بنجاح.`);
-  if (typeof loadSelectedMonthData === 'function') loadSelectedMonthData();
-};
-
-// استدعاء الأرشفة التلقائية بعد تسجيل الدخول
-const _origDoLogin = window.doLogin;
-window.doLogin = function() {
-  _origDoLogin();
-  setTimeout(autoArchiveOrphans, 500);
-};
-
+/* ============ استعادة الجلسة ============ */
 (function restoreSession() {
   const saved = localStorage.getItem('baytna_user');
   if (saved) {
@@ -809,8 +995,15 @@ window.doLogin = function() {
     window.doLogin();
   } else {
     displayTodayHeaderInfo();
+    setTimeout(() => { if (typeof autoArchiveOrphans === 'function') autoArchiveOrphans(true); }, 300);
   }
 })();
+
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && allItemsCache.length > 0) {
+    archiveItemsToStore(allItemsCache, new Date(), true);
+  }
+});
 </script>
 </body>
 </html>
