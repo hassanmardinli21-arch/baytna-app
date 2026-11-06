@@ -252,7 +252,7 @@ const firebaseConfig = {
   projectId: "baytna-e0a77",
   storageBucket: "baytna-e0a77.firebasestorage.app",
   messagingSenderId: "807987531508",
-  appId: "1:807987531508:web:ccbbfabca849d1c731d8a1"
+  appId: "1:807987531508:web:c11353b09461d08831d8a1"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -452,9 +452,7 @@ function loadTodayLocalItems() {
   window.renderItemsList(allItemsCache);
 }
 
-function saveTodayLocalItems() {
-  localStorage.setItem(todayKey(), JSON.stringify(allItemsCache));
-}
+function saveTodayLocalItems() { localStorage.setItem(todayKey(), JSON.stringify(allItemsCache)); }
 
 /* ============ الأرشفة ============ */
 function archiveItemsToStore(items, dateObj, silent) {
