@@ -560,10 +560,10 @@ window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split(
 window.moveDayToAnotherDate = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`); if (!input) return; const parts = input.split('-').map(Number); if (parts.length !== 3 || parts.some(isNaN)) return; const [ny, nm, nd] = parts; const newDate = new Date(ny, nm - 1, nd); if (isNaN(newDate.getTime())) return; const archive = readArchive(); const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const newBaseTs = newDate.getTime(); let count = 0; archive.forEach(it => { if (!it.timestamp) return; const t = new Date(it.timestamp); if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) { it.timestamp = newBaseTs + count; it.archivedDate = newLabel; it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp; count++; } }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
 window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
 
-/* ============ بدء التطبيق ============ */
+/* ============ بدء التطبيق (إجبار شاشة الدخول) ============ */
 (function init() {
   displayTodayHeaderInfo();
-  // إجبار التطبيق على إظهار شاشة الدخول دائماً عند التحديث
+  // إخفاء الشاشة الرئيسية وإظهار شاشة الدخول دائماً عند التحديث
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('homeScreen').style.display = 'none';
   setSyncBadge('offline');
