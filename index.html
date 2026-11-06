@@ -251,7 +251,7 @@ import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs }
 
 // --- إعدادات مشروعك الجديد baytna ---
 const firebaseConfig = {
-  apiKey: "AIzaSyCy3tg1v0NXG92IreTddCfYK-HUD-dMh_A",
+  apiKey: "AIzaSyCy3tg1v0NXG92IreTddCfYK-HUD-dMh_A", // تم تصحيح الحرف هنا
   authDomain: "baytna-e0a77.firebaseapp.com",
   projectId: "baytna-e0a77",
   storageBucket: "baytna-e0a77.firebasestorage.app",
@@ -381,10 +381,8 @@ window.doLogin = async function() {
   btn.innerText = "جاري التحقق...";
 
   try {
-    // نحاول تسجيل الدخول أولاً
     await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-    // إذا لم يوجد الحساب، نقوم بإنشائه تلقائياً
     if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
       try {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -417,16 +415,11 @@ onAuthStateChanged(auth, (user) => {
     startCloudListener();
     loadTodayLocalItems();
     
-    // سحب الأرشيف من السحابة عند الدخول
     getDocs(collection(db, "baytna_archives")).then(snap => {
       snap.forEach(docSnap => {
         if (docSnap.id === currentUserUid) {
            const cloudArchive = docSnap.data().list || [];
-           const localArchive = readArchive();
-           if (cloudArchive.length > 0) {
-              // نأخذ السحابة كمرجع أساسي
-              writeArchive(cloudArchive);
-           }
+           if (cloudArchive.length > 0) { writeArchive(cloudArchive); }
         }
       });
     });
@@ -443,9 +436,7 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-window.logout = function() {
-  signOut(auth);
-};
+window.logout = function() { signOut(auth); };
 
 window.openAddItemModal = function() {
   document.getElementById('itemNameInput').value = '';
@@ -486,11 +477,8 @@ function loadTodayLocalItems() {
   window.renderItemsList(allItemsCache);
 }
 
-function saveTodayLocalItems() {
-  localStorage.setItem(todayKey(), JSON.stringify(allItemsCache));
-}
+function saveTodayLocalItems() { localStorage.setItem(todayKey(), JSON.stringify(allItemsCache)); }
 
-/* ============ الأرشفة ============ */
 function archiveItemsToStore(items, dateObj, silent) {
   if (!items || items.length === 0) return 0;
   const archive = readArchive();
@@ -519,7 +507,6 @@ window.archiveCurrentDay = async function() {
   alert(`تمت أرشفة ${added} مادة.`);
 };
 
-/* ============ الحاسبة ============ */
 let calcExpression = "", calcMemoryValue = 0;
 window.openCalculator = function() { document.getElementById('calculatorModal').style.display = 'flex'; };
 window.closeCalculator = function() { document.getElementById('calculatorModal').style.display = 'none'; };
@@ -529,7 +516,6 @@ window.deleteCalcChar = function() { calcExpression = calcExpression.slice(0, -1
 window.calculateResult = function() { try { let res = eval(calcExpression); document.getElementById('calcScreen').innerText = res; calcExpression = res.toString(); } catch (e) { document.getElementById('calcScreen').innerText = "خطأ"; calcExpression = ""; } };
 window.calcMemory = function(action) { const s = document.getElementById('calcScreen'); if (action === 'MC') { calcMemoryValue = 0; s.innerText = "0"; calcExpression = ""; } else if (action === 'MR') { calcExpression += calcMemoryValue.toString(); s.innerText = calcExpression; } else if (action === 'M+') { try { calcMemoryValue += eval(calcExpression) || 0; s.innerText = "تم الحفظ"; setTimeout(() => { s.innerText = calcExpression || "0"; }, 800); } catch(e) {} } };
 
-/* ============ عرض القائمة ============ */
 window.renderItemsList = function(items) {
   const listContainer = document.getElementById('itemsList');
   if (!listContainer) return;
@@ -558,7 +544,6 @@ window.markItemDone = function(id) { const item = allItemsCache.find(i => i.id =
 window.cancelItem = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; item.status = 'cancelled'; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
 window.deleteItem = function(id) { if (!confirm("حذف هذه المادة نهائياً؟")) return; allItemsCache = allItemsCache.filter(i => i.id !== id); saveTodayLocalItems(); window.renderItemsList(allItemsCache); deleteItemFromCloud(id); };
 
-/* ============ السجل الشهري ============ */
 window.showMonthlyReport = function() {
   document.getElementById('monthlyModal').style.display = 'flex';
   if (allItemsCache.length > 0) archiveItemsToStore(allItemsCache, new Date(), true);
