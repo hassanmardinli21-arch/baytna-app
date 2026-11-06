@@ -241,9 +241,9 @@
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js?v=2";
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js?v=2";
+import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js?v=2";
 
 // --- إعدادات مشروعك الجديد baytna ---
 const firebaseConfig = {
@@ -563,7 +563,6 @@ window.downloadPDF = function() { const el = document.getElementById('monthlyRep
 /* ============ بدء التطبيق (إجبار شاشة الدخول) ============ */
 (function init() {
   displayTodayHeaderInfo();
-  // إخفاء الشاشة الرئيسية وإظهار شاشة الدخول دائماً عند التحديث
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('homeScreen').style.display = 'none';
   setSyncBadge('offline');
