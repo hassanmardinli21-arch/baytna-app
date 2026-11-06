@@ -106,28 +106,24 @@
 </head>
 <body>
 
-<!-- شاشة تسجيل الدخول (بالبريد وكلمة المرور) -->
+<!-- شاشة الدخول (بالاسم فقط) -->
 <div id="loginScreen" class="login-wrap">
   <div class="login-logo">🏠</div>
   <div class="login-title">بيتنا</div>
-  <div class="login-sub">سجل دخولك لمزامنة بياناتك</div>
+  <div class="login-sub">إدارة مخزون المنزل بذكاء</div>
   <div class="login-form">
     <div class="input-group">
-      <label class="input-label">البريد الإلكتروني</label>
-      <input type="email" id="emailInput" class="input-field" placeholder="example@gmail.com" autocomplete="off" style="direction: ltr; text-align: left;">
+      <label class="input-label">اسمك</label>
+      <input type="text" id="usernameInput" class="input-field" value="حسان" autocomplete="off">
     </div>
-    <div class="input-group">
-      <label class="input-label">كلمة المرور</label>
-      <input type="password" id="passwordInput" class="input-field" placeholder="••••••••" style="direction: ltr; text-align: left;">
-    </div>
-    <button class="btn" type="button" onclick="doLogin()" id="loginBtn">دخول / إنشاء حساب</button>
+    <button class="btn" type="button" onclick="doLogin()" id="loginBtn">دخول</button>
   </div>
 </div>
 
 <!-- الشاشة الرئيسية -->
 <div id="homeScreen" style="display: none;">
   <div class="app-header">
-    <div class="header-title">بيت <span id="usernameDisplay">المستخدم</span> <span>🏠</span></div>
+    <div class="header-title">بيت <span id="usernameDisplay">حسان</span> <span>🏠</span></div>
     <div class="header-actions">
       <span id="syncBadge" class="sync-badge syncing">⏳ جارٍ</span>
       <button class="icon-btn" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
@@ -246,7 +242,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // --- إعدادات مشروعك الجديد baytna ---
@@ -268,6 +264,7 @@ let allItemsCache = [];
 let currentUserUid = null;
 let unsubscribeSnapshot = null;
 const ARCHIVE_KEY = 'baytna_archive_list';
+const USER_PREFIX = 'baytna_user_';
 
 function todayKey() { return 'baytna_items_' + new Date().toDateString(); }
 
@@ -368,75 +365,53 @@ function startCloudListener() {
   });
 }
 
-/* ============ تسجيل الدخول بالبريد الإلكتروني ============ */
-window.doLogin = async function() {
-  const email = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  const btn = document.getElementById('loginBtn');
-
-  if (!email || !password) { alert("يرجى إدخال البريد الإلكتروني وكلمة المرور."); return; }
-  if (password.length < 6) { alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل."); return; }
-
-  btn.disabled = true;
-  btn.innerText = "جاري التحقق...";
-
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (error) {
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } catch (createError) {
-        alert("خطأ في إنشاء الحساب: " + createError.message);
-        btn.disabled = false;
-        btn.innerText = "دخول / إنشاء حساب";
-        return;
+/* ============ تسجيل الدخول المجهول (بالاسم فقط) ============ */
+async function ensureAnonymousAuth() {
+  return new Promise((resolve) => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUserUid = user.uid;
+        setSyncBadge('online');
+        startCloudListener();
+        resolve(user);
+      } else {
+        signInAnonymously(auth).catch(e => {
+          console.error('auth error', e);
+          setSyncBadge('offline');
+          resolve(null);
+        });
       }
-    } else {
-      alert("خطأ في تسجيل الدخول: " + error.message);
-      btn.disabled = false;
-      btn.innerText = "دخول / إنشاء حساب";
-      return;
-    }
-  }
+    });
+  });
+}
+
+/* ============ دوال واجهة المستخدم ============ */
+window.doLogin = async function() {
+  const nameInput = document.getElementById('usernameInput');
+  const name = nameInput ? nameInput.value.trim() : "حسان";
+  localStorage.setItem(USER_PREFIX + 'name', name);
+
+  const userDisplay = document.getElementById('usernameDisplay');
+  if (userDisplay) userDisplay.innerText = name;
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('homeScreen').style.display = 'block';
+
+  displayTodayHeaderInfo();
+  setSyncBadge('syncing');
+
+  await ensureAnonymousAuth();
+  loadTodayLocalItems();
 };
 
-/* ============ حالة المصادقة ============ */
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUserUid = user.uid;
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('homeScreen').style.display = 'block';
-    document.getElementById('usernameDisplay').innerText = user.email.split('@')[0];
-    
-    displayTodayHeaderInfo();
-    setSyncBadge('syncing');
-    
-    startCloudListener();
-    loadTodayLocalItems();
-    
-    getDocs(collection(db, "baytna_archives")).then(snap => {
-      snap.forEach(docSnap => {
-        if (docSnap.id === currentUserUid) {
-           const cloudArchive = docSnap.data().list || [];
-           if (cloudArchive.length > 0) { writeArchive(cloudArchive); }
-        }
-      });
-    });
-
-  } else {
-    currentUserUid = null;
-    if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
-    document.getElementById('homeScreen').style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-    setSyncBadge('offline');
-    document.getElementById('loginBtn').disabled = false;
-    document.getElementById('loginBtn').innerText = "دخول / إنشاء حساب";
-    document.getElementById('passwordInput').value = '';
-  }
-});
-
-window.logout = function() { signOut(auth); };
+window.logout = function() {
+  if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+  localStorage.removeItem(USER_PREFIX + 'name');
+  document.getElementById('homeScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  setSyncBadge('offline');
+  signOut(auth);
+};
 
 window.openAddItemModal = function() {
   document.getElementById('itemNameInput').value = '';
@@ -477,8 +452,11 @@ function loadTodayLocalItems() {
   window.renderItemsList(allItemsCache);
 }
 
-function saveTodayLocalItems() { localStorage.setItem(todayKey(), JSON.stringify(allItemsCache)); }
+function saveTodayLocalItems() {
+  localStorage.setItem(todayKey(), JSON.stringify(allItemsCache));
+}
 
+/* ============ الأرشفة ============ */
 function archiveItemsToStore(items, dateObj, silent) {
   if (!items || items.length === 0) return 0;
   const archive = readArchive();
