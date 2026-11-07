@@ -102,6 +102,10 @@
   .row-actions { display: flex; gap: 4px; }
   .row-actions button { padding: 3px 7px; font-size: 11px; }
   .month-grand-total { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 10px; border-top: 2px solid var(--primary); font-weight: 700; font-size: 15px; }
+  .backup-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .backup-actions .btn { flex: 1; padding: 12px; font-size: 14px; background: var(--card); color: var(--primary-dark); border: 1px solid var(--primary); box-shadow: none; }
+  .backup-actions .btn:hover { background: #f0f0f0; }
+  .backup-actions input[type="file"] { display: none; }
 </style>
 </head>
 <body>
@@ -182,6 +186,14 @@
     </div>
 
     <div id="itemsList"></div>
+
+    <div class="backup-actions">
+        <button class="btn" onclick="exportData()">📤 تصدير البيانات</button>
+        <label class="btn" style="text-align:center; justify-content:center; display:flex; cursor:pointer;">
+            📥 استيراد البيانات
+            <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+        </label>
+    </div>
   </div>
 
   <button class="calc-fab" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
@@ -689,6 +701,56 @@ window.deleteArchiveItem = function(archId) { if (!confirm("حذف هذه الم
 window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); if (!confirm(`حذف جميع مواد يوم ${d}/${m}/${y}؟`)) return; const archive = readArchive().filter(it => { if (!it.timestamp) return true; const t = new Date(it.timestamp); return !(t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d); }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
 window.moveDayToAnotherDate = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`); if (!input) return; const parts = input.split('-').map(Number); if (parts.length !== 3 || parts.some(isNaN)) return; const [ny, nm, nd] = parts; const newDate = new Date(ny, nm - 1, nd); if (isNaN(newDate.getTime())) return; const archive = readArchive(); const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const newBaseTs = newDate.getTime(); let count = 0; archive.forEach(it => { if (!it.timestamp) return; const t = new Date(it.timestamp); if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) { it.timestamp = newBaseTs + count; it.archivedDate = newLabel; it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp; count++; } }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
 window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
+
+/* ============ تصدير واستيراد البيانات ============ */
+window.exportData = function() {
+  const data = {
+    archive: readArchive(),
+    items: allItemsCache,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `baytna-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  alert('تم تصدير نسخة احتياطية من البيانات.');
+};
+
+window.importData = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.items && !data.archive) throw new Error('ملف غير صالح');
+      if (confirm('سيتم استبدال البيانات الحالية بالبيانات المستوردة. هل أنت متأكد؟')) {
+        if (data.archive) writeArchive(data.archive);
+        if (data.items) {
+          allItemsCache = data.items;
+          saveTodayLocalItems();
+        }
+        window.renderItemsList(allItemsCache);
+        await pushArchiveToCloud(readArchive());
+        if (data.items) {
+          for (const item of data.items) {
+            await pushItemToCloud(item);
+          }
+        }
+        alert('تم استيراد البيانات بنجاح.');
+      }
+    } catch (err) {
+      alert('خطأ في قراءة الملف: ' + err.message);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+};
 
 /* ============ بدء التطبيق ============ */
 (function init() {
