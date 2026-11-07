@@ -256,14 +256,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- إعدادات مشروعك الجديد baytna ---
+// --- إعدادات مشروعك الجديد Baytna-10 ---
 const firebaseConfig = {
-  apiKey: "AIzaSyCy3tg1v0NXG92IreTddCfYK-HUD-dMh_A",
-  authDomain: "baytna-e0a77.firebaseapp.com",
-  projectId: "baytna-e0a77",
-  storageBucket: "baytna-e0a77.firebasestorage.app",
-  messagingSenderId: "807987531508",
-  appId: "1:807987531508:web:346f4e1efa5d9a6b31d8a1"
+  apiKey: "AIzaSyDXVClsWhLOc3m710m2Fy6p5KncFIHQTCU",
+  authDomain: "baytna-10.firebaseapp.com",
+  projectId: "baytna-10",
+  storageBucket: "baytna-10.firebasestorage.app",
+  messagingSenderId: "480526325243",
+  appId: "1:480526325243:web:444940ce97845bf727a75e",
+  measurementId: "G-WWCZGDKZVV"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -365,7 +366,6 @@ function startCloudListener() {
     const visibleCloudItems = cloudItems.filter(item => item.formattedDate === todayFormatted || item.status === 'active' || item.status === 'done');
 
     if (!initialItemsSnapshotLoaded) {
-      // عند أول تحميل فقط ندمج المواد المحلية القديمة مع السحابة.
       const mergedById = new Map();
       allItemsCache.forEach(item => mergedById.set(item.id, item));
       visibleCloudItems.forEach(item => mergedById.set(item.id, item));
@@ -379,7 +379,6 @@ function startCloudListener() {
         if (!cloudIds.has(localItem.id)) await pushItemToCloud(localItem);
       }
     } else {
-      // بعد التحميل الأول تصبح السحابة المرجع؛ وبذلك ينتشر الحذف بين الأجهزة أيضاً.
       allItemsCache = visibleCloudItems;
       saveTodayLocalItems();
       window.renderItemsList(allItemsCache);
@@ -418,7 +417,6 @@ function startArchiveListener() {
       writeArchive(mergedArchive);
       if (JSON.stringify(localArchive) !== JSON.stringify(mergedArchive)) await pushArchiveToCloud(mergedArchive);
     } else {
-      // بعد أول مزامنة نعتمد نسخة السحابة حتى ينتشر الحذف والتعديل بين الأجهزة.
       writeArchive(cloudArchive);
     }
     if (document.getElementById('monthlyModal')?.style.display === 'flex') window.loadSelectedMonthData();
@@ -450,7 +448,7 @@ function firebaseErrorMessage(error) {
     'auth/wrong-password': 'كلمة المرور غير صحيحة.',
     'auth/too-many-requests': 'محاولات كثيرة؛ انتظر قليلاً ثم حاول مجدداً.',
     'auth/network-request-failed': 'تعذر الاتصال بالإنترنت. تحقق من الشبكة.',
-    'permission-denied': 'رفضت قواعد Firestore الوصول. يجب تحديث قواعد الأمان كما هو موضح أسفل التعليمات.',
+    'permission-denied': 'رفضت قواعد Firestore الوصول. يجب تحديث قواعد الأمان.',
     'unavailable': 'خدمة Firebase غير متاحة حالياً. حاول بعد قليل.'
   };
   return messages[code] || ('تعذر إكمال العملية: ' + (error?.message || code || 'خطأ غير معروف'));
@@ -525,7 +523,6 @@ window.logout = async function() {
 };
 
 onAuthStateChanged(auth, (user) => {
-  authInitialized = true;
   if (user) {
     showHomeForUser(user);
   } else {
