@@ -106,17 +106,28 @@
 </head>
 <body>
 
-<!-- شاشة الدخول (بالاسم فقط) -->
+<!-- شاشة تسجيل الدخول -->
 <div id="loginScreen" class="login-wrap">
   <div class="login-logo">🏠</div>
   <div class="login-title">بيتنا</div>
   <div class="login-sub">إدارة مخزون المنزل بذكاء</div>
   <div class="login-form">
     <div class="input-group">
-      <label class="input-label">اسمك</label>
-      <input type="text" id="usernameInput" class="input-field" value="حسان" autocomplete="off">
+      <label class="input-label">البريد الإلكتروني</label>
+      <input type="email" id="emailInput" class="input-field" value="hassanmardinli21@gmail.com" autocomplete="username" dir="ltr" required>
     </div>
-    <button class="btn" type="button" onclick="doLogin()" id="loginBtn">دخول</button>
+    <div class="input-group">
+      <label class="input-label">كلمة المرور</label>
+      <input type="password" id="passwordInput" class="input-field" placeholder="أدخل كلمة المرور" autocomplete="current-password" dir="ltr" required>
+    </div>
+    <div class="input-group">
+      <label class="input-label">الاسم الظاهر (اختياري)</label>
+      <input type="text" id="usernameInput" class="input-field" value="حسان" autocomplete="name">
+    </div>
+    <button class="btn" type="button" id="loginButton" onclick="doLogin()">تسجيل الدخول</button>
+    <button class="btn" type="button" style="margin-top:10px;background:#4A6D5F;" onclick="registerAccount()">إنشاء حساب جديد</button>
+    <button type="button" onclick="resetPassword()" style="display:block;margin:16px auto 0;border:0;background:transparent;color:var(--primary-dark);font:inherit;cursor:pointer;">نسيت كلمة المرور؟</button>
+    <p id="authMessage" role="status" style="margin-top:14px;text-align:center;font-size:13px;line-height:1.7;color:var(--danger);"></p>
   </div>
 </div>
 
@@ -242,17 +253,17 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- إعدادات مشروعك الجديد baytna (تم تصحيح الحرف I) ---
+// --- إعدادات مشروعك الجديد baytna ---
 const firebaseConfig = {
   apiKey: "AIzaSyCy3tg1v0NXG92IreTddCfYK-HUD-dMh_A",
   authDomain: "baytna-e0a77.firebaseapp.com",
   projectId: "baytna-e0a77",
   storageBucket: "baytna-e0a77.firebasestorage.app",
   messagingSenderId: "807987531508",
-  appId: "1:807987531508:web:c11353b09461d08831d8a1"
+  appId: "1:807987531508:web:346f4e1efa5d9a6b31d8a1"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -263,6 +274,9 @@ const ITEMS_COLLECTION = "baytna_items";
 let allItemsCache = [];
 let currentUserUid = null;
 let unsubscribeSnapshot = null;
+let unsubscribeArchiveSnapshot = null;
+let initialItemsSnapshotLoaded = false;
+let initialArchiveSnapshotLoaded = false;
 const ARCHIVE_KEY = 'baytna_archive_list';
 const USER_PREFIX = 'baytna_user_';
 
@@ -288,13 +302,16 @@ function setSyncBadge(state) {
   else el.innerText = '⚠️ غير متصل';
 }
 
-/* ============ Firestore: رفع مادة ============ */
+/* ============ Firestore: مزامنة المواد والأرشيف لكل حساب ============ */
+function cloudItemRef(itemId) {
+  return doc(db, ITEMS_COLLECTION, currentUserUid + "_" + itemId);
+}
+
 async function pushItemToCloud(item) {
   if (!currentUserUid) return;
   try {
     setSyncBadge('syncing');
-    const ref = doc(db, ITEMS_COLLECTION, item.id);
-    await setDoc(ref, {
+    await setDoc(cloudItemRef(item.id), {
       ...item,
       uid: currentUserUid,
       updatedAt: new Date().toISOString()
@@ -303,15 +320,15 @@ async function pushItemToCloud(item) {
   } catch (e) {
     console.error('pushItemToCloud', e);
     setSyncBadge('offline');
+    showAuthMessage(firebaseErrorMessage(e), true);
   }
 }
 
-/* ============ Firestore: حذف مادة ============ */
 async function deleteItemFromCloud(itemId) {
   if (!currentUserUid) return;
   try {
     setSyncBadge('syncing');
-    await deleteDoc(doc(db, ITEMS_COLLECTION, itemId));
+    await deleteDoc(cloudItemRef(itemId));
     setSyncBadge('online');
   } catch (e) {
     console.error('deleteItemFromCloud', e);
@@ -319,100 +336,211 @@ async function deleteItemFromCloud(itemId) {
   }
 }
 
-/* ============ Firestore: رفع أرشيف ============ */
 async function pushArchiveToCloud(archiveList) {
   if (!currentUserUid) return;
   try {
     setSyncBadge('syncing');
-    const ref = doc(db, "baytna_archives", currentUserUid);
-    await setDoc(ref, { list: archiveList, updatedAt: new Date().toISOString() }, { merge: true });
+    await setDoc(doc(db, "baytna_archives", currentUserUid), {
+      uid: currentUserUid,
+      list: archiveList,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
     setSyncBadge('online');
   } catch (e) {
     console.error('pushArchiveToCloud', e);
     setSyncBadge('offline');
+    showAuthMessage(firebaseErrorMessage(e), true);
   }
 }
 
-/* ============ Firestore: الاستماع للتغييرات ============ */
 function startCloudListener() {
+  if (!currentUserUid) return;
   if (unsubscribeSnapshot) unsubscribeSnapshot();
-  const q = collection(db, ITEMS_COLLECTION);
-  unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+  initialItemsSnapshotLoaded = false;
+  const q = query(collection(db, ITEMS_COLLECTION), where('uid', '==', currentUserUid));
+  unsubscribeSnapshot = onSnapshot(q, async (snapshot) => {
     const cloudItems = [];
-    snapshot.forEach(d => {
-      const data = d.data();
-      if (!data.uid || data.uid === currentUserUid) {
-        cloudItems.push({ id: d.id, ...data });
-      }
-    });
-
-    const merged = [...cloudItems];
-    allItemsCache.forEach(local => {
-      if (!merged.some(c => c.id === local.id)) {
-        merged.push(local);
-        pushItemToCloud(local);
-      }
-    });
-
+    snapshot.forEach(d => cloudItems.push({ ...d.data(), id: d.data().id || d.id }));
     const todayFormatted = new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const todayItems = merged.filter(it => it.formattedDate === todayFormatted || it.status === 'active' || it.status === 'done');
-    allItemsCache = todayItems;
-    window.renderItemsList(allItemsCache);
+    const visibleCloudItems = cloudItems.filter(item => item.formattedDate === todayFormatted || item.status === 'active' || item.status === 'done');
+
+    if (!initialItemsSnapshotLoaded) {
+      // عند أول تحميل فقط ندمج المواد المحلية القديمة مع السحابة.
+      const mergedById = new Map();
+      allItemsCache.forEach(item => mergedById.set(item.id, item));
+      visibleCloudItems.forEach(item => mergedById.set(item.id, item));
+      allItemsCache = Array.from(mergedById.values());
+      initialItemsSnapshotLoaded = true;
+      saveTodayLocalItems();
+      window.renderItemsList(allItemsCache);
+
+      const cloudIds = new Set(cloudItems.map(item => item.id));
+      for (const localItem of allItemsCache) {
+        if (!cloudIds.has(localItem.id)) await pushItemToCloud(localItem);
+      }
+    } else {
+      // بعد التحميل الأول تصبح السحابة المرجع؛ وبذلك ينتشر الحذف بين الأجهزة أيضاً.
+      allItemsCache = visibleCloudItems;
+      saveTodayLocalItems();
+      window.renderItemsList(allItemsCache);
+    }
     setSyncBadge('online');
   }, (error) => {
-    console.error('snapshot error', error);
+    console.error('items snapshot error', error);
     setSyncBadge('offline');
+    showAuthMessage(firebaseErrorMessage(error), true);
   });
 }
 
-/* ============ تسجيل الدخول المجهول (بالاسم فقط) ============ */
-async function ensureAnonymousAuth() {
-  return new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUserUid = user.uid;
-        setSyncBadge('online');
-        startCloudListener();
-        resolve(user);
-      } else {
-        signInAnonymously(auth).catch(e => {
-          console.error('auth error', e);
-          setSyncBadge('offline');
-          resolve(null);
-        });
+function startArchiveListener() {
+  if (!currentUserUid) return;
+  if (unsubscribeArchiveSnapshot) unsubscribeArchiveSnapshot();
+  initialArchiveSnapshotLoaded = false;
+  const archiveRef = doc(db, "baytna_archives", currentUserUid);
+  unsubscribeArchiveSnapshot = onSnapshot(archiveRef, async (snapshot) => {
+    const localArchive = readArchive();
+    if (!snapshot.exists()) {
+      if (!initialArchiveSnapshotLoaded && localArchive.length) {
+        await pushArchiveToCloud(localArchive);
+        return;
       }
-    });
+      initialArchiveSnapshotLoaded = true;
+      setSyncBadge('online');
+      return;
+    }
+    const cloudArchive = Array.isArray(snapshot.data().list) ? snapshot.data().list : [];
+    if (!initialArchiveSnapshotLoaded) {
+      const merged = new Map();
+      localArchive.forEach(item => merged.set(item.archId || item.id, item));
+      cloudArchive.forEach(item => merged.set(item.archId || item.id, item));
+      const mergedArchive = Array.from(merged.values());
+      initialArchiveSnapshotLoaded = true;
+      writeArchive(mergedArchive);
+      if (JSON.stringify(localArchive) !== JSON.stringify(mergedArchive)) await pushArchiveToCloud(mergedArchive);
+    } else {
+      // بعد أول مزامنة نعتمد نسخة السحابة حتى ينتشر الحذف والتعديل بين الأجهزة.
+      writeArchive(cloudArchive);
+    }
+    if (document.getElementById('monthlyModal')?.style.display === 'flex') window.loadSelectedMonthData();
+    setSyncBadge('online');
+  }, (error) => {
+    console.error('archive snapshot error', error);
+    setSyncBadge('offline');
+    showAuthMessage(firebaseErrorMessage(error), true);
   });
 }
 
-/* ============ دوال واجهة المستخدم ============ */
-window.doLogin = async function() {
+function showAuthMessage(message, isError = false) {
+  const el = document.getElementById('authMessage');
+  if (el) {
+    el.textContent = message || '';
+    el.style.color = isError ? 'var(--danger)' : 'var(--success-dark)';
+  }
+}
+
+function firebaseErrorMessage(error) {
+  const code = error?.code || '';
+  const messages = {
+    'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة.',
+    'auth/missing-password': 'يرجى إدخال كلمة المرور.',
+    'auth/weak-password': 'كلمة المرور ضعيفة؛ استخدم 6 أحرف على الأقل.',
+    'auth/email-already-in-use': 'هذا البريد مسجل مسبقاً. استخدم تسجيل الدخول.',
+    'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+    'auth/user-not-found': 'لا يوجد حساب بهذا البريد. أنشئ حساباً جديداً أولاً.',
+    'auth/wrong-password': 'كلمة المرور غير صحيحة.',
+    'auth/too-many-requests': 'محاولات كثيرة؛ انتظر قليلاً ثم حاول مجدداً.',
+    'auth/network-request-failed': 'تعذر الاتصال بالإنترنت. تحقق من الشبكة.',
+    'permission-denied': 'رفضت قواعد Firestore الوصول. يجب تحديث قواعد الأمان كما هو موضح أسفل التعليمات.',
+    'unavailable': 'خدمة Firebase غير متاحة حالياً. حاول بعد قليل.'
+  };
+  return messages[code] || ('تعذر إكمال العملية: ' + (error?.message || code || 'خطأ غير معروف'));
+}
+
+function showHomeForUser(user) {
+  currentUserUid = user.uid;
+  const savedName = localStorage.getItem(USER_PREFIX + 'name') || user.displayName || 'حسان';
   const nameInput = document.getElementById('usernameInput');
-  const name = nameInput ? nameInput.value.trim() : "حسان";
-  localStorage.setItem(USER_PREFIX + 'name', name);
-
+  if (nameInput) nameInput.value = savedName;
   const userDisplay = document.getElementById('usernameDisplay');
-  if (userDisplay) userDisplay.innerText = name;
-
+  if (userDisplay) userDisplay.innerText = savedName;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('homeScreen').style.display = 'block';
-
   displayTodayHeaderInfo();
-  setSyncBadge('syncing');
-
-  await ensureAnonymousAuth();
   loadTodayLocalItems();
+  setSyncBadge('syncing');
+  startCloudListener();
+  startArchiveListener();
+  showAuthMessage('تم تسجيل الدخول. جارٍ مزامنة بيانات حسابك…', false);
+}
+
+/* ============ المصادقة بالبريد وكلمة المرور ============ */
+window.doLogin = async function() {
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  if (!email || !password) { showAuthMessage('أدخل البريد الإلكتروني وكلمة المرور.', true); return; }
+  const button = document.getElementById('loginButton');
+  if (button) { button.disabled = true; button.textContent = 'جارٍ تسجيل الدخول…'; }
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    showAuthMessage('تم تسجيل الدخول بنجاح.', false);
+  } catch (e) {
+    console.error('sign in error', e);
+    showAuthMessage(firebaseErrorMessage(e), true);
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'تسجيل الدخول'; }
+  }
 };
 
-window.logout = function() {
-  if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
-  localStorage.removeItem(USER_PREFIX + 'name');
-  document.getElementById('homeScreen').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  setSyncBadge('offline');
-  signOut(auth);
+window.registerAccount = async function() {
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const name = document.getElementById('usernameInput').value.trim() || 'حسان';
+  if (!email || !password) { showAuthMessage('أدخل البريد الإلكتروني وكلمة مرور جديدة.', true); return; }
+  if (password.length < 6) { showAuthMessage('كلمة المرور يجب أن تتكون من 6 أحرف على الأقل.', true); return; }
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    localStorage.setItem(USER_PREFIX + 'name', name);
+    showAuthMessage('تم إنشاء الحساب بنجاح. احفظ كلمة المرور لديك.', false);
+  } catch (e) {
+    console.error('register error', e);
+    showAuthMessage(firebaseErrorMessage(e), true);
+  }
 };
 
+window.resetPassword = async function() {
+  const email = document.getElementById('emailInput').value.trim();
+  if (!email) { showAuthMessage('اكتب بريدك الإلكتروني أولاً ثم اضغط نسيت كلمة المرور.', true); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showAuthMessage('أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.', false);
+  } catch (e) {
+    console.error('password reset error', e);
+    showAuthMessage(firebaseErrorMessage(e), true);
+  }
+};
+
+window.logout = async function() {
+  try { await signOut(auth); }
+  catch (e) { console.error('logout error', e); showAuthMessage(firebaseErrorMessage(e), true); }
+};
+
+onAuthStateChanged(auth, (user) => {
+  authInitialized = true;
+  if (user) {
+    showHomeForUser(user);
+  } else {
+    currentUserUid = null;
+    initialItemsSnapshotLoaded = false;
+    initialArchiveSnapshotLoaded = false;
+    if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    if (unsubscribeArchiveSnapshot) { unsubscribeArchiveSnapshot(); unsubscribeArchiveSnapshot = null; }
+    document.getElementById('homeScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    setSyncBadge('offline');
+  }
+});
+
+/* ============ دوال واجهة المستخدم ============ */
 window.openAddItemModal = function() {
   document.getElementById('itemNameInput').value = '';
   document.getElementById('itemPriceInput').value = '';
@@ -452,7 +580,9 @@ function loadTodayLocalItems() {
   window.renderItemsList(allItemsCache);
 }
 
-function saveTodayLocalItems() { localStorage.setItem(todayKey(), JSON.stringify(allItemsCache)); }
+function saveTodayLocalItems() {
+  localStorage.setItem(todayKey(), JSON.stringify(allItemsCache));
+}
 
 /* ============ الأرشفة ============ */
 function archiveItemsToStore(items, dateObj, silent) {
@@ -483,6 +613,7 @@ window.archiveCurrentDay = async function() {
   alert(`تمت أرشفة ${added} مادة.`);
 };
 
+/* ============ الحاسبة ============ */
 let calcExpression = "", calcMemoryValue = 0;
 window.openCalculator = function() { document.getElementById('calculatorModal').style.display = 'flex'; };
 window.closeCalculator = function() { document.getElementById('calculatorModal').style.display = 'none'; };
@@ -492,6 +623,7 @@ window.deleteCalcChar = function() { calcExpression = calcExpression.slice(0, -1
 window.calculateResult = function() { try { let res = eval(calcExpression); document.getElementById('calcScreen').innerText = res; calcExpression = res.toString(); } catch (e) { document.getElementById('calcScreen').innerText = "خطأ"; calcExpression = ""; } };
 window.calcMemory = function(action) { const s = document.getElementById('calcScreen'); if (action === 'MC') { calcMemoryValue = 0; s.innerText = "0"; calcExpression = ""; } else if (action === 'MR') { calcExpression += calcMemoryValue.toString(); s.innerText = calcExpression; } else if (action === 'M+') { try { calcMemoryValue += eval(calcExpression) || 0; s.innerText = "تم الحفظ"; setTimeout(() => { s.innerText = calcExpression || "0"; }, 800); } catch(e) {} } };
 
+/* ============ عرض القائمة ============ */
 window.renderItemsList = function(items) {
   const listContainer = document.getElementById('itemsList');
   if (!listContainer) return;
@@ -520,6 +652,7 @@ window.markItemDone = function(id) { const item = allItemsCache.find(i => i.id =
 window.cancelItem = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; item.status = 'cancelled'; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
 window.deleteItem = function(id) { if (!confirm("حذف هذه المادة نهائياً؟")) return; allItemsCache = allItemsCache.filter(i => i.id !== id); saveTodayLocalItems(); window.renderItemsList(allItemsCache); deleteItemFromCloud(id); };
 
+/* ============ السجل الشهري ============ */
 window.showMonthlyReport = function() {
   document.getElementById('monthlyModal').style.display = 'flex';
   if (allItemsCache.length > 0) archiveItemsToStore(allItemsCache, new Date(), true);
@@ -560,14 +693,11 @@ window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split(
 window.moveDayToAnotherDate = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`); if (!input) return; const parts = input.split('-').map(Number); if (parts.length !== 3 || parts.some(isNaN)) return; const [ny, nm, nd] = parts; const newDate = new Date(ny, nm - 1, nd); if (isNaN(newDate.getTime())) return; const archive = readArchive(); const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const newBaseTs = newDate.getTime(); let count = 0; archive.forEach(it => { if (!it.timestamp) return; const t = new Date(it.timestamp); if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) { it.timestamp = newBaseTs + count; it.archivedDate = newLabel; it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp; count++; } }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
 window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
 
-/* ============ بدء التطبيق (إجبار شاشة الدخول) ============ */
+/* ============ بدء التطبيق ============ */
 (function init() {
-  // إجبار المتصفح على مسح أي جلسة قديمة
-  localStorage.removeItem(USER_PREFIX + 'name');
-  
   displayTodayHeaderInfo();
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('homeScreen').style.display = 'none';
+  const savedName = localStorage.getItem(USER_PREFIX + 'name');
+  if (savedName) document.getElementById('usernameInput').value = savedName;
   setSyncBadge('offline');
 })();
 </script>
