@@ -1,34 +1,32 @@
-const nameInputVal = document.getElementById('usernameInput')?.value.trim() || 'حسان';
-  localStorage.setItem(USER_PREFIX + 'name', nameInputVal);
-  if (button) { button.disabled = false; button.textContent = 'تسجيل الدخول'; }
-}
-
-window.doLogin = async function() {
-  const email = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  if (!email || !password) { showAuthMessage('أدخل البريد الإلكتروني وكلمة المرور.', true); return; }
-  const button = document.getElementById('loginButton');
-  if (button) { button.disabled = true; button.textContent = 'جارٍ تسجيل الدخول…'; }
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    showAuthMessage('تم تسجيل الدخول بنجاح.', false);
-  } catch (e) {
-    console.error('sign in error', e);
-    showAuthMessage(firebaseErrorMessage(e), true);
-  } finally {
-    if (button) { button.disabled = false; button.textContent = 'تسجيل الدخول'; }
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6B9080">
+<title>بيتنا</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #F5F1EA; --card: #FFFFFF;
+    --primary: #6B9080; --primary-dark: #4A6D5F;
+    --accent: #C9A58D; --text: #2D3A3A; --text-light: #7A8787;
+    --border: #EAE3D9; --danger: #B87B6E;
+    --success: #7BA77E; --success-dark: #4A7C4E;
+    --warning: #D4A55C;
+    --shadow: 0 2px 12px rgba(45, 58, 58, 0.06);
+    --shadow-lg: 0 12px 40px rgba(45, 58, 58, 0.18);
   }
-}
-
-window.registerAccount = async function() {
-  const email = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  if (!email || !password) { showAuthMessage('أدخل البريد الإلكتروني وكلمة المرور لإنشاء حساب.', true); return; }
-  try {
-    await createUserWithEmailAndPassword(auth, email, password);
-    showAuthMessage('تم إنشاء الحساب بنجاح!', false);
-  } catch (e) {
-    console.error('register error', e);
-    showAuthMessage(firebaseErrorMessage(e), true);
-  }
-}
+  html, body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  body { padding-bottom: 100px; }
+  .login-wrap { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; background: linear-gradient(160deg, #F5F1EA 0%, #E8DFD2 100%); }
+  .login-logo { width: 90px; height: 90px; border-radius: 28px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); display: flex; align-items: center; justify-content: center; font-size: 44px; margin-bottom: 24px; box-shadow: 0 12px 32px rgba(107, 144, 128, 0.3); }
+  .login-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .login-sub { color: var(--text-light); font-size: 15px; margin-bottom: 40px; }
+  .login-form { width: 100%; max-width: 360px; }
+  .input-group { margin-bottom: 16px; }
+  .input-label { font-size: 14px; color: var(--text-light); margin-bottom: 8px; display: block; font-weight: 500; }
+  .input-field { width: 100%; padding: 16px 18px; border: 2px solid var(--border); border-radius: 16px; background: var(--card); font-size: 16px; font-family: inherit; color: var(--text); }
+  .btn { width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer; box-shadow: 0 4px 16px rgba(107, 144, 128, 0.25); }
+  .app-header { position: sticky; top: 0; z-index: 100; background: rgba(245, 241, 234, 0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px
