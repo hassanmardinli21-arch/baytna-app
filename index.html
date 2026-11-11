@@ -144,6 +144,7 @@
   </div>
 
   <div class="container">
+    <!-- بطاقة الملخص العلوي المفقودة -->
     <div class="summary-card">
       <div class="summary-row">
         <div>
@@ -209,6 +210,21 @@
       <select id="itemUnitInput" class="form-control"><option value="كغ">كغ</option><option value="ليتر">ليتر</option><option value="علبه">علبه</option><option value="ربطة">ربطة</option><option value="قطعة">قطعة</option></select>
     </div>
     <button class="btn-submit" onclick="submitNewItem()">حفظ المادة</button>
+  </div>
+</div>
+
+<!-- نافذة تعديل مادة اليوم -->
+<div id="editDailyItemModal" class="modal-overlay">
+  <div class="sheet">
+    <div class="sheet-title"><span>✏️ تعديل مادة اليوم</span><button class="sheet-close" onclick="closeEditDailyItemModal()">✕</button></div>
+    <input type="hidden" id="editDailyItemId">
+    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">اسم المادة</label><input type="text" id="editDailyItemName" class="form-control"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">السعر ($)</label><input type="number" id="editDailyItemPrice" class="form-control" step="0.01"></div>
+      <div class="form-group"><label class="form-label">الكمية</label><input type="number" id="editDailyItemWeight" class="form-control"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px;"><label class="form-label">وحدة القياس</label><select id="editDailyItemUnit" class="form-control"><option value="كغ">كغ</option><option value="ليتر">ليتر</option><option value="علبه">علبه</option><option value="ربطة">ربطة</option><option value="قطعة">قطعة</option></select></div>
+    <button class="btn-submit" onclick="saveEditedDailyItem()">💾 حفظ التعديل</button>
   </div>
 </div>
 
@@ -297,4 +313,46 @@ function displayTodayHeaderInfo() {
 }
 
 function readArchive() {
-  try { return JSON.parse(localStorage.getItem(ARCHIVE
+  try { return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]'); } catch (e) { return []; }
+}
+function writeArchive(list) { localStorage.setItem(ARCHIVE_KEY, JSON.stringify(list)); }
+
+function setSyncBadge(state) {
+  const el = document.getElementById('syncBadge');
+  if (!el) return;
+  el.className = 'sync-badge ' + state;
+  if (state === 'online') el.innerText = '☁️ متصل';
+  else if (state === 'syncing') el.innerText = '⏳ جارٍ';
+  else el.innerText = '⚠️ غير متصل';
+}
+
+function cloudItemRef(itemId) {
+  return doc(db, ITEMS_COLLECTION, currentUserUid + "_" + itemId);
+}
+
+async function pushItemToCloud(item) {
+  if (!currentUserUid) return;
+  try {
+    setSyncBadge('syncing');
+    await setDoc(cloudItemRef(item.id), {
+      ...item,
+      uid: currentUserUid,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    setSyncBadge('online');
+  } catch (e) {
+    console.error('pushItemToCloud', e);
+    setSyncBadge('offline');
+    showAuthMessage(firebaseErrorMessage(e), true);
+  }
+}
+
+async function deleteItemFromCloud(itemId) {
+  if (!currentUserUid) return;
+  try {
+    setSyncBadge('syncing');
+    await deleteDoc(cloudItemRef(itemId));
+    setSyncBadge('online');
+  } catch (e) {
+    console.error('deleteItemFromCloud', e);
+    setSyncBadge('offline');
