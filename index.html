@@ -59,6 +59,7 @@
   .item-meta { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .item-badge { padding: 3px 8px; border-radius: 6px; background: #F0EBE0; font-size: 11px; color: var(--text-light); }
   .item-price-info { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; justify-content: space-between; }
+  .item-price-badge { padding: 5px 10px; border-radius: 10px; background: #E8F5E9; color: #1B5E20; font-size: 13px; font-weight: 600; border: 1.5px solid #7BA77E; }
   .item-total-badge { padding: 5px 12px; border-radius: 10px; background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; font-size: 14px; font-weight: 700; }
   .item-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
   .action-btn { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
@@ -90,17 +91,20 @@
   .btn-danger { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--danger); background: #FFF5F3; color: var(--danger); font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; }
   .day-group { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .day-group-header { background: #F0EBE0; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: var(--primary-dark); gap: 8px; flex-wrap: wrap; }
-  .day-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 6px; }
-  .day-row:last-child { border-bottom: none; }
-  .row-actions { display: flex; gap: 4px; }
+  .day-actions { display: flex; gap: 5px; flex-wrap: wrap; }
   .mini-btn { padding: 4px 9px; border-radius: 7px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text); }
   .mini-btn.del { color: var(--danger); border-color: #E5C2BB; }
   .mini-btn.move { color: var(--primary-dark); border-color: var(--primary); }
   .mini-btn.edit { color: var(--warning); border-color: #E8CFA0; }
   .day-group-body { padding: 6px 12px; }
+  .day-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 6px; }
+  .day-row:last-child { border-bottom: none; }
+  .row-actions { display: flex; gap: 4px; }
+  .row-actions button { padding: 3px 7px; font-size: 11px; }
   .month-grand-total { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 10px; border-top: 2px solid var(--primary); font-weight: 700; font-size: 15px; }
   .backup-actions { display: flex; gap: 10px; margin-top: 16px; }
   .backup-actions .btn { flex: 1; padding: 12px; font-size: 14px; background: var(--card); color: var(--primary-dark); border: 1px solid var(--primary); box-shadow: none; }
+  .backup-actions .btn:hover { background: #f0f0f0; }
   .backup-actions input[type="file"] { display: none; }
 </style>
 </head>
@@ -144,7 +148,6 @@
   </div>
 
   <div class="container">
-    <!-- بطاقة الملخص العلوي -->
     <div class="summary-card">
       <div class="summary-row">
         <div>
@@ -213,21 +216,6 @@
   </div>
 </div>
 
-<!-- نافذة تعديل مادة اليوم -->
-<div id="editDailyItemModal" class="modal-overlay">
-  <div class="sheet">
-    <div class="sheet-title"><span>✏️ تعديل مادة اليوم</span><button class="sheet-close" onclick="closeEditDailyItemModal()">✕</button></div>
-    <input type="hidden" id="editDailyItemId">
-    <div class="form-group" style="margin-bottom:12px;"><label class="form-label">اسم المادة</label><input type="text" id="editDailyItemName" class="form-control"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">السعر ($)</label><input type="number" id="editDailyItemPrice" class="form-control" step="0.01"></div>
-      <div class="form-group"><label class="form-label">الكمية</label><input type="number" id="editDailyItemWeight" class="form-control"></div>
-    </div>
-    <div class="form-group" style="margin-bottom:10px;"><label class="form-label">وحدة القياس</label><select id="editDailyItemUnit" class="form-control"><option value="كغ">كغ</option><option value="ليتر">ليتر</option><option value="علبه">علبه</option><option value="ربطة">ربطة</option><option value="قطعة">قطعة</option></select></div>
-    <button class="btn-submit" onclick="saveEditedDailyItem()">💾 حفظ التعديل</button>
-  </div>
-</div>
-
 <!-- نافذة تعديل مادة في السجل -->
 <div id="editItemModal" class="modal-overlay">
   <div class="sheet">
@@ -278,8 +266,9 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, query, where, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// --- إعدادات مشروعك الجديد Baytna-10 ---
 const firebaseConfig = {
   apiKey: "AIzaSyDXVClsWhLOc3m710m2Fy6p5KncFIHQTCU",
   authDomain: "baytna-10.firebaseapp.com",
@@ -326,6 +315,7 @@ function setSyncBadge(state) {
   else el.innerText = '⚠️ غير متصل';
 }
 
+/* ============ Firestore: مزامنة المواد والأرشيف لكل حساب ============ */
 function cloudItemRef(itemId) {
   return doc(db, ITEMS_COLLECTION, currentUserUid + "_" + itemId);
 }
@@ -385,11 +375,20 @@ function startCloudListener() {
     const cloudItems = [];
     snapshot.forEach(d => cloudItems.push({ ...d.data(), id: d.data().id || d.id }));
     const todayFormatted = new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const visibleCloudItems = cloudItems.filter(item => item.formattedDate === todayFormatted || item.status === 'active' || item.status === 'done');
+
+    // لا نعرض إلا مواد اليوم غير المؤرشفة. لا يكفي فحص الحالة (active/done)،
+    // لأن المواد القديمة قد تبقى بهذه الحالة في Firestore بعد أرشفتها.
+    const isVisibleTodayItem = (item) => {
+      const itemDate = item.formattedDate || item.date || '';
+      return item.archived !== true && itemDate === todayFormatted;
+    };
+    const visibleCloudItems = cloudItems.filter(isVisibleTodayItem);
 
     if (!initialItemsSnapshotLoaded) {
       const mergedById = new Map();
-      allItemsCache.forEach(item => mergedById.set(item.id, item));
+      allItemsCache
+        .filter(isVisibleTodayItem)
+        .forEach(item => mergedById.set(item.id, item));
       visibleCloudItems.forEach(item => mergedById.set(item.id, item));
       allItemsCache = Array.from(mergedById.values());
       initialItemsSnapshotLoaded = true;
@@ -470,8 +469,8 @@ function firebaseErrorMessage(error) {
     'auth/wrong-password': 'كلمة المرور غير صحيحة.',
     'auth/too-many-requests': 'محاولات كثيرة؛ انتظر قليلاً ثم حاول مجدداً.',
     'auth/network-request-failed': 'تعذر الاتصال بالإنترنت. تحقق من الشبكة.',
-    'permission-denied': 'رفضت قواعد Firestore الوصول.',
-    'unavailable': 'خدمة Firebase غير متاحة حالياً.'
+    'permission-denied': 'رفضت قواعد Firestore الوصول. يجب تحديث قواعد الأمان.',
+    'unavailable': 'خدمة Firebase غير متاحة حالياً. حاول بعد قليل.'
   };
   return messages[code] || ('تعذر إكمال العملية: ' + (error?.message || code || 'خطأ غير معروف'));
 }
@@ -493,6 +492,7 @@ function showHomeForUser(user) {
   showAuthMessage('تم تسجيل الدخول. جارٍ مزامنة بيانات حسابك…', false);
 }
 
+/* ============ المصادقة بالبريد وكلمة المرور ============ */
 window.doLogin = async function() {
   const email = document.getElementById('emailInput').value.trim();
   const password = document.getElementById('passwordInput').value;
@@ -501,8 +501,6 @@ window.doLogin = async function() {
   if (button) { button.disabled = true; button.textContent = 'جارٍ تسجيل الدخول…'; }
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    const nameInputVal = document.getElementById('usernameInput')?.value.trim() || 'حسان';
-    localStorage.setItem(USER_PREFIX + 'name', nameInputVal);
     showAuthMessage('تم تسجيل الدخول بنجاح.', false);
   } catch (e) {
     console.error('sign in error', e);
@@ -510,483 +508,271 @@ window.doLogin = async function() {
   } finally {
     if (button) { button.disabled = false; button.textContent = 'تسجيل الدخول'; }
   }
-}
+};
 
 window.registerAccount = async function() {
   const email = document.getElementById('emailInput').value.trim();
   const password = document.getElementById('passwordInput').value;
-  if (!email || !password) { showAuthMessage('أدخل البريد الإلكتروني وكلمة المرور لإنشاء حساب.', true); return; }
+  const name = document.getElementById('usernameInput').value.trim() || 'حسان';
+  if (!email || !password) { showAuthMessage('أدخل البريد الإلكتروني وكلمة مرور جديدة.', true); return; }
+  if (password.length < 6) { showAuthMessage('كلمة المرور يجب أن تتكون من 6 أحرف على الأقل.', true); return; }
   try {
     await createUserWithEmailAndPassword(auth, email, password);
-    showAuthMessage('تم إنشاء الحساب بنجاح!', false);
+    localStorage.setItem(USER_PREFIX + 'name', name);
+    showAuthMessage('تم إنشاء الحساب بنجاح. احفظ كلمة المرور لديك.', false);
   } catch (e) {
     console.error('register error', e);
     showAuthMessage(firebaseErrorMessage(e), true);
   }
-}
+};
 
 window.resetPassword = async function() {
   const email = document.getElementById('emailInput').value.trim();
-  if (!email) { showAuthMessage('أدخل البريد الإلكتروني أولاً لاستعادة كلمة المرور.', true); return; }
+  if (!email) { showAuthMessage('اكتب بريدك الإلكتروني أولاً ثم اضغط نسيت كلمة المرور.', true); return; }
   try {
     await sendPasswordResetEmail(auth, email);
-    showAuthMessage('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.', false);
+    showAuthMessage('أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.', false);
   } catch (e) {
-    console.error('reset error', e);
+    console.error('password reset error', e);
     showAuthMessage(firebaseErrorMessage(e), true);
   }
-}
+};
 
 window.logout = async function() {
-  try {
-    if (unsubscribeSnapshot) unsubscribeSnapshot();
-    if (unsubscribeArchiveSnapshot) unsubscribeArchiveSnapshot();
-    await signOut(auth);
-  } catch(e) {
-    console.error('logout error', e);
-  }
-  currentUserUid = null;
-  allItemsCache = [];
-  document.getElementById('homeScreen').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  showAuthMessage('تم تسجيل الخروج بنجاح.', false);
-}
+  try { await signOut(auth); }
+  catch (e) { console.error('logout error', e); showAuthMessage(firebaseErrorMessage(e), true); }
+};
 
 onAuthStateChanged(auth, (user) => {
   if (user) {
     showHomeForUser(user);
   } else {
+    currentUserUid = null;
+    initialItemsSnapshotLoaded = false;
+    initialArchiveSnapshotLoaded = false;
+    if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    if (unsubscribeArchiveSnapshot) { unsubscribeArchiveSnapshot(); unsubscribeArchiveSnapshot = null; }
     document.getElementById('homeScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
+    setSyncBadge('offline');
   }
 });
 
-function loadTodayLocalItems() {
-  try {
-    const data = localStorage.getItem(todayKey());
-    if (data) allItemsCache = JSON.parse(data);
-    else allItemsCache = [];
-  } catch(e) { allItemsCache = []; }
-  window.renderItemsList(allItemsCache);
-}
-
-function saveTodayLocalItems() {
-  try { localStorage.setItem(todayKey(), JSON.stringify(allItemsCache)); } catch(e) {}
-}
-
-window.renderItemsList = function(list) {
-  const container = document.getElementById('itemsList');
-  if (!container) return;
-  const searchTerm = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
-  const filtered = list.filter(item => !searchTerm || (item.name && item.name.toLowerCase().includes(searchTerm)));
-
-  let totalPrice = 0;
-  let totalWeight = filtered.length;
-  let doneCount = 0;
-  let activeCount = 0;
-
-  filtered.forEach(item => {
-    const p = parseFloat(item.price) || 0;
-    const w = parseFloat(item.weight) || 1;
-    totalPrice += p * w;
-    if (item.status === 'done') doneCount++;
-    else activeCount++;
-  });
-
-  const priceEl = document.getElementById('totalPrice');
-  if (priceEl) priceEl.innerText = totalPrice.toFixed(2);
-  const weightEl = document.getElementById('totalWeight');
-  if (weightEl) weightEl.innerText = totalWeight;
-  const doneEl = document.getElementById('doneCount');
-  if (doneEl) doneEl.innerText = doneCount;
-  const activeEl = document.getElementById('activeCount');
-  if (activeEl) activeEl.innerText = activeCount;
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-light); background:var(--card); border-radius:18px; border:1px solid var(--border);">لا توجد مواد مسجلة لهذا اليوم. اضغط على زر "إضافة مادة جديدة" للبدء.</div>';
-    return;
-  }
-
-  let html = '';
-  filtered.forEach(item => {
-    const p = parseFloat(item.price) || 0;
-    const w = parseFloat(item.weight) || 1;
-    const itemTotal = p * w;
-    const isDone = item.status === 'done';
-
-    html += `
-      <div class="item-card" style="${isDone ? 'opacity:0.75; background:#FAFAFA;' : ''}">
-        <div class="item-header">
-          <div>
-            <div class="item-name" style="${isDone ? 'text-decoration:line-through; color:var(--text-light);' : ''}">${escapeHtml(item.name)}</div>
-            <div class="item-meta">
-              <span class="item-badge">الكمية: ${w} ${escapeHtml(item.unit || 'كغ')}</span>
-              <span class="item-badge">التاريخ: ${escapeHtml(item.formattedDate || '')}</span>
-            </div>
-          </div>
-          <div class="item-total-badge">${itemTotal.toFixed(2)} $</div>
-        </div>
-        <div class="item-price-info">
-          <span style="font-size:13px; color:var(--text-light);">سعر الوحدة: ${p.toFixed(2)} $</span>
-        </div>
-        <div class="item-actions">
-          ${isDone 
-            ? `<button class="action-btn cancel" onclick="updateItemStatus('${item.id}', 'active')">↩️ إلغاء الإنجاز</button>`
-            : `<button class="action-btn done" onclick="updateItemStatus('${item.id}', 'done')">✅ تم الشراء</button>`
-          }
-          <button class="action-btn edit" onclick="openEditDailyItemModal('${item.id}')">✏️ تعديل</button>
-          <button class="action-btn delete" onclick="deleteItem('${item.id}')">🗑️ حذف</button>
-        </div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-}
-
-window.filterTodayItems = function() {
-  window.renderItemsList(allItemsCache);
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
+/* ============ دوال واجهة المستخدم ============ */
 window.openAddItemModal = function() {
   document.getElementById('itemNameInput').value = '';
   document.getElementById('itemPriceInput').value = '';
-  document.getElementById('itemWeightInput').value = '1';
+  document.getElementById('itemWeightInput').value = '';
+  document.getElementById('itemUnitInput').value = 'كغ';
   document.getElementById('addItemModal').style.display = 'flex';
-}
-window.closeAddItemModal = function() {
-  document.getElementById('addItemModal').style.display = 'none';
-}
+  setTimeout(() => document.getElementById('itemNameInput').focus(), 100);
+};
+window.closeAddItemModal = function() { document.getElementById('addItemModal').style.display = 'none'; };
 
 window.submitNewItem = async function() {
   const name = document.getElementById('itemNameInput').value.trim();
+  if (!name) { alert("يرجى إدخال اسم المادة."); return; }
   const price = parseFloat(document.getElementById('itemPriceInput').value) || 0;
   const weight = parseFloat(document.getElementById('itemWeightInput').value) || 1;
   const unit = document.getElementById('itemUnitInput').value;
-
-  if (!name) { alert('يرجى إدخال اسم المادة.'); return; }
-
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate = new Date().toLocaleDateString('ar-SY', options);
+  const formattedDate = new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   const newItem = {
-    id: 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-    name,
-    price,
-    weight,
-    unit,
-    status: 'active',
-    date: new Date().toISOString(),
-    formattedDate
+    id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    name, price, weight, unit, status: 'active',
+    date: formattedDate, formattedDate
   };
 
   allItemsCache.unshift(newItem);
   saveTodayLocalItems();
   window.renderItemsList(allItemsCache);
-  closeAddItemModal();
   await pushItemToCloud(newItem);
-}
+  closeAddItemModal();
+};
 
-window.updateItemStatus = async function(id, status) {
-  const item = allItemsCache.find(i => i.id === id);
-  if (item) {
-    item.status = status;
-    saveTodayLocalItems();
-    window.renderItemsList(allItemsCache);
-    await pushItemToCloud(item);
-  }
-}
-
-window.deleteItem = async function(id) {
-  if (!confirm('هل أنت متأكد من حذف هذه المادة؟')) return;
-  allItemsCache = allItemsCache.filter(i => i.id !== id);
-  saveTodayLocalItems();
+function loadTodayLocalItems() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(todayKey()) || '[]');
+    allItemsCache = Array.isArray(saved) ? saved.filter(item => item && item.archived !== true) : [];
+  } catch (e) { allItemsCache = []; }
   window.renderItemsList(allItemsCache);
-  await deleteItemFromCloud(id);
 }
 
-// تعديل مادة اليوم الحالية
-window.openEditDailyItemModal = function(id) {
-  const item = allItemsCache.find(i => i.id === id);
-  if (!item) return;
-  document.getElementById('editDailyItemId').value = item.id;
-  document.getElementById('editDailyItemName').value = item.name || '';
-  document.getElementById('editDailyItemPrice').value = item.price || 0;
-  document.getElementById('editDailyItemWeight').value = item.weight || 1;
-  document.getElementById('editDailyItemUnit').value = item.unit || 'كغ';
-  document.getElementById('editDailyItemModal').style.display = 'flex';
+function saveTodayLocalItems() {
+  localStorage.setItem(todayKey(), JSON.stringify(allItemsCache));
 }
 
-window.closeEditDailyItemModal = function() {
-  document.getElementById('editDailyItemModal').style.display = 'none';
-}
+/* ============ الأرشفة ============ */
+function archiveItemsToStore(items, dateObj, silent) {
+  if (!items || items.length === 0) return 0;
 
-window.saveEditedDailyItem = async function() {
-  const id = document.getElementById('editDailyItemId').value;
-  const item = allItemsCache.find(i => i.id === id);
-  if (!item) return;
+  const archive = readArchive();
+  const formattedDate = dateObj.toLocaleDateString('ar-SY', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const baseTs = dateObj.getTime();
+  let added = 0;
 
-  item.name = document.getElementById('editDailyItemName').value.trim();
-  item.price = parseFloat(document.getElementById('editDailyItemPrice').value) || 0;
-  item.weight = parseFloat(document.getElementById('editDailyItemWeight').value) || 1;
-  item.unit = document.getElementById('editDailyItemUnit').value;
+  items.forEach((item, idx) => {
+    const archId = 'arch_' + item.id + '_' + baseTs;
+    if (archive.some(x => x.archId === archId)) return;
 
-  saveTodayLocalItems();
-  window.renderItemsList(allItemsCache);
-  closeEditDailyItemModal();
-  await pushItemToCloud(item);
+    archive.push({
+      ...item,
+      archId,
+      archivedDate: formattedDate,
+      timestamp: baseTs + idx
+    });
+    added++;
+  });
+
+  writeArchive(archive);
+  localStorage.setItem('baytna_last_archive_date', new Date().toDateString());
+  return added;
 }
 
 window.archiveCurrentDay = async function() {
+  // تنظيف أي عنصر مؤرشف تسلل إلى القائمة قبل بدء الأرشفة.
+  allItemsCache = allItemsCache.filter(item => item.archived !== true);
+
   if (allItemsCache.length === 0) {
-    alert('لا توجد مواد في قائمة اليوم لأرشفتها.');
+    alert("لا توجد مواد مسجلة اليوم لأرشفتها!");
     return;
   }
-  if (!confirm('هل تريد أرشفة مواد اليوم وترحيلها إلى السجل الشهري وبدء يوم جديد؟')) return;
 
-  const archive = readArchive();
-  const todayStr = new Date().toLocaleDateString('ar-SY', { year: 'numeric', month: 'long', day: 'numeric' });
+  if (!confirm("أرشفة مشتريات اليوم في السجل الشهري، وبدء يوم جديد؟")) return;
 
-  allItemsCache.forEach(item => {
-    archive.unshift({
-      ...item,
-      archId: 'arch_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      archivedAtDate: todayStr
-    });
-  });
+  const dateNow = new Date();
+  // نضع علامة الأرشفة على النسخة التي ستُحفظ في السجل وعلى مستند Firestore
+  // نفسه، حتى لا يعيده مستمع المزامنة إلى قائمة اليوم.
+  const itemsToArchive = allItemsCache.map(item => ({
+    ...item,
+    archived: true,
+    archivedAt: dateNow.toISOString()
+  }));
 
-  writeArchive(archive);
-  await pushArchiveToCloud(archive);
+  const added = archiveItemsToStore(itemsToArchive, dateNow, false);
 
-  for (const item of allItemsCache) {
-    await deleteItemFromCloud(item.id);
+  try {
+    // حفظ سجل الأرشيف أولاً، ثم تحديث مستندات المواد الأصلية في السحابة.
+    await pushArchiveToCloud(readArchive());
+    for (const item of itemsToArchive) {
+      await pushItemToCloud(item);
+    }
+
+    allItemsCache = [];
+    localStorage.removeItem(todayKey());
+    window.renderItemsList(allItemsCache);
+    alert(`تمت أرشفة ${added} مادة وبدء يوم جديد.`);
+  } catch (error) {
+    console.error('archiveCurrentDay error', error);
+    // لا نفرغ القائمة إذا تعذرت عملية الحفظ؛ تبقى المواد ظاهرة كي لا تضيع.
+    alert("تعذر إكمال المزامنة. بقيت المواد ظاهرة؛ تحقق من الاتصال ثم حاول مجدداً.");
   }
-  allItemsCache = [];
-  saveTodayLocalItems();
-  window.renderItemsList(allItemsCache);
-  alert('تمت أرشفة اليوم بنجاح وترحيل البيانات إلى السجل الشهري.');
-}
+};
 
-window.showMonthlyReport = function() {
-  const now = new Date();
-  document.getElementById('yearSelect').value = now.getFullYear();
-  document.getElementById('monthSelect').value = now.getMonth() + 1;
+/* ============ الحاسبة ============ */
+let calcExpression = "", calcMemoryValue = 0;
+window.openCalculator = function() { document.getElementById('calculatorModal').style.display = 'flex'; };
+window.closeCalculator = function() { document.getElementById('calculatorModal').style.display = 'none'; };
+window.pressCalc = function(val) { calcExpression += val; document.getElementById('calcScreen').innerText = calcExpression; };
+window.clearCalc = function() { calcExpression = ""; document.getElementById('calcScreen').innerText = "0"; };
+window.deleteCalcChar = function() { calcExpression = calcExpression.slice(0, -1); document.getElementById('calcScreen').innerText = calcExpression || "0"; };
+window.calculateResult = function() { try { let res = eval(calcExpression); document.getElementById('calcScreen').innerText = res; calcExpression = res.toString(); } catch (e) { document.getElementById('calcScreen').innerText = "خطأ"; calcExpression = ""; } };
+window.calcMemory = function(action) { const s = document.getElementById('calcScreen'); if (action === 'MC') { calcMemoryValue = 0; s.innerText = "0"; calcExpression = ""; } else if (action === 'MR') { calcExpression += calcMemoryValue.toString(); s.innerText = calcExpression; } else if (action === 'M+') { try { calcMemoryValue += eval(calcExpression) || 0; s.innerText = "تم الحفظ"; setTimeout(() => { s.innerText = calcExpression || "0"; }, 800); } catch(e) {} } };
+
+/* ============ عرض القائمة ============ */
+window.renderItemsList = function(items) {
+  const listContainer = document.getElementById('itemsList');
+  if (!listContainer) return;
+  let html = "", totalP = 0, doneCount = 0, activeCount = 0;
+  items.sort((a, b) => { const sa = a.status || 'active', sb = b.status || 'active'; if (sa === 'active' && sb !== 'active') return -1; if (sa !== 'active' && sb === 'active') return 1; return 0; });
+  items.forEach((data) => {
+    const p = parseFloat(data.price) || 0, w = parseFloat(data.weight) || 1, u = data.unit || 'كغ', status = data.status || 'active', sub = p * w;
+    if (status !== 'cancelled') { totalP += sub; if (status === 'done') doneCount++; else activeCount++; }
+    let statusBadge = "", cardStyle = "", nameStyle = "";
+    if (status === 'done') { statusBadge = ' (✓ تم شراؤه)'; cardStyle = 'background: #E8F5E9; border-color: #7BA77E; opacity: 0.85;'; nameStyle = 'text-decoration: line-through; color: var(--success-dark);'; }
+    else if (status === 'cancelled') { statusBadge = ' (✕ ملغى)'; cardStyle = 'background: #FBF5F3; border-color: #F0D5CF; opacity: 0.7;'; nameStyle = 'text-decoration: line-through; color: var(--danger);'; }
+    html += `<div class="item-card" style="${cardStyle}"><div class="item-header"><div><div class="item-name" style="${nameStyle}">${data.name}${statusBadge}</div><div class="item-meta"><span>${data.formattedDate || ''}</span><span class="item-badge">${u}</span></div></div></div><div class="item-price-info"><span class="item-price-badge">${p.toFixed(2)} $ × ${w} ${u}</span><span class="item-total-badge">${sub.toFixed(2)} $</span></div><div class="item-actions"><button class="action-btn edit" onclick="editItem('${data.id}')">تعديل</button><button class="action-btn done" onclick="markItemDone('${data.id}')">تم الشراء</button><button class="action-btn cancel" onclick="cancelItem('${data.id}')">إلغاء</button><button class="action-btn delete" onclick="deleteItem('${data.id}')">حذف</button></div></div>`;
+  });
+  listContainer.innerHTML = html || '<p style="text-align:center;color:var(--text-light);padding:40px 0;">لا توجد مواد اليوم. أضف مادة جديدة.</p>';
+  document.getElementById('totalPrice').innerText = totalP.toFixed(2);
+  document.getElementById('totalWeight').innerText = items.length;
+  document.getElementById('doneCount').innerText = doneCount;
+  document.getElementById('activeCount').innerText = activeCount;
+};
+
+window.filterTodayItems = function() { const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase(); if (!q) return window.renderItemsList(allItemsCache); window.renderItemsList(allItemsCache.filter(it => (it.name || '').toLowerCase().includes(q))); };
+
+window.editItem = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; const name = prompt("اسم المادة:", item.name); if (name === null) return; const price = prompt("السعر ($):", item.price); if (price === null) return; const weight = prompt("الكمية:", item.weight); if (weight === null) return; item.name = name.trim() || item.name; item.price = parseFloat(price) || 0; item.weight = parseFloat(weight) || 1; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
+
+window.markItemDone = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; item.status = 'done'; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
+window.cancelItem = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; item.status = 'cancelled'; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
+window.deleteItem = function(id) { if (!confirm("حذف هذه المادة نهائياً؟")) return; allItemsCache = allItemsCache.filter(i => i.id !== id); saveTodayLocalItems(); window.renderItemsList(allItemsCache); deleteItemFromCloud(id); };
+
+/* ============ السجل الشهري ============ */
+window.showMonthlyReport = async function() {
   document.getElementById('monthlyModal').style.display = 'flex';
-  window.loadSelectedMonthData();
-}
-
-window.closeMonthlyReport = function() {
-  document.getElementById('monthlyModal').style.display = 'none';
-}
+  // هذا مجرد تسجيل نسخة في التقرير الشهري، وليس إنهاءً لليوم أو أرشفة للمواد.
+  if (allItemsCache.length > 0) {
+    archiveItemsToStore(allItemsCache.filter(item => item.archived !== true), new Date(), true);
+    await pushArchiveToCloud(readArchive());
+  }
+  loadSelectedMonthData();
+};
+window.closeMonthlyReport = function() { document.getElementById('monthlyModal').style.display = 'none'; };
 
 window.loadSelectedMonthData = function() {
-  const selectedYear = parseInt(document.getElementById('yearSelect').value);
-  const selectedMonth = parseInt(document.getElementById('monthSelect').value);
-  const archive = readArchive();
-
+  const year = parseInt(document.getElementById('yearSelect')?.value || '2026');
+  const month = parseInt(document.getElementById('monthSelect')?.value || '10');
   const container = document.getElementById('monthlyContent');
   if (!container) return;
-
-  const filtered = archive.filter(item => {
-    const d = new Date(item.date || Date.now());
-    return d.getFullYear() === selectedYear && (d.getMonth() + 1) === selectedMonth;
+  const archive = readArchive();
+  const monthItems = archive.filter(it => { const t = it.timestamp ? new Date(it.timestamp) : null; return t && t.getFullYear() === year && (t.getMonth() + 1) === month; });
+  if (monthItems.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:30px 0;">لا توجد بيانات لهذا الشهر.</p>'; return; }
+  const byDay = {};
+  monthItems.forEach(it => { const t = new Date(it.timestamp); const dayKey = t.getDate(); if (!byDay[dayKey]) byDay[dayKey] = { items: [], total: 0, label: it.archivedDate || t.toLocaleDateString('ar-SY') }; const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1); byDay[dayKey].items.push(it); byDay[dayKey].total += sub; });
+  const days = Object.keys(byDay).map(Number).sort((a, b) => a - b);
+  let grandTotal = 0, totalCount = 0;
+  let html = `<div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--primary-dark);">سجل ${month}/${year} — ${monthItems.length} مادة</div>`;
+  days.forEach(dayNum => {
+    const g = byDay[dayNum]; grandTotal += g.total; totalCount += g.items.length;
+    const dayKeyStr = `${year}-${month}-${dayNum}`;
+    let rows = "";
+    g.items.forEach(it => { const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1); const statusTag = it.status === 'cancelled' ? ' (ملغى)' : ''; rows += `<div class="day-row"><span>${it.name}${statusTag} (${it.weight} ${it.unit || 'كغ'}) — <b>${sub.toFixed(2)} $</b></span><span class="row-actions"><button class="mini-btn edit" onclick="openEditArchiveItem('${it.archId}')">✏️</button><button class="mini-btn del" onclick="deleteArchiveItem('${it.archId}')">🗑️</button></span></div>`; });
+    html += `<div class="day-group"><div class="day-group-header"><span>📅 ${g.label}</span><span>${g.total.toFixed(2)} $</span><span class="day-actions"><button class="mini-btn move" onclick="moveDayToAnotherDate('${dayKeyStr}')">🗓️ نقل</button><button class="mini-btn del" onclick="deleteWholeDay('${dayKeyStr}')">🗑️ حذف اليوم</button></span></div><div class="day-group-body">${rows}</div></div>`;
   });
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<p style="text-align: center; color: var(--text-light); padding: 20px;">لا توجد سجلات مؤرشفة لهذا الشهر.</p>';
-    return;
-  }
-
-  const grouped = {};
-  filtered.forEach(item => {
-    const dayKey = item.archivedAtDate || item.formattedDate || 'تاريخ غير محدد';
-    if (!grouped[dayKey]) grouped[dayKey] = [];
-    grouped[dayKey].push(item);
-  });
-
-  let grandTotal = 0;
-  let html = '';
-
-  for (const [day, items] of Object.entries(grouped)) {
-    let dayTotal = 0;
-    let rowsHtml = '';
-    items.forEach(item => {
-      const t = (parseFloat(item.price) || 0) * (parseFloat(item.weight) || 1);
-      dayTotal += t;
-      grandTotal += t;
-      rowsHtml += `
-        <div class="day-row">
-          <span><b>${escapeHtml(item.name)}</b> (${item.weight} ${item.unit || 'كغ'})</span>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span><b>${t.toFixed(2)} $</b></span>
-            <div class="row-actions">
-              <button class="mini-btn edit" onclick="openEditArchiveItemModal('${item.archId}')">تعديل</button>
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-      <div class="day-group">
-        <div class="day-group-header">
-          <span>📅 ${escapeHtml(day)}</span>
-          <span>إجمالي اليوم: ${dayTotal.toFixed(2)} $</span>
-        </div>
-        <div class="day-group-body">
-          ${rowsHtml}
-        </div>
-      </div>
-    `;
-  }
-
-  html += `
-    <div class="month-grand-total">
-      <span>إجمالي الشهر:</span>
-      <span style="color:var(--primary-dark); font-size:17px;">${grandTotal.toFixed(2)} $</span>
-    </div>
-  `;
-
+  html += `<div class="month-grand-total"><span>الإجمالي الشهري (${totalCount} مادة)</span><span>${grandTotal.toFixed(2)} $</span></div>`;
   container.innerHTML = html;
-}
+};
 
-window.openEditArchiveItemModal = function(archId) {
-  const archive = readArchive();
-  const item = archive.find(i => i.archId === archId);
-  if (!item) return;
+window.openEditArchiveItem = function(archId) { const archive = readArchive(); const item = archive.find(x => x.archId === archId); if (!item) return; document.getElementById('editItemArchId').value = archId; document.getElementById('editItemName').value = item.name || ''; document.getElementById('editItemPrice').value = item.price || 0; document.getElementById('editItemWeight').value = item.weight || 1; document.getElementById('editItemUnit').value = item.unit || 'كغ'; document.getElementById('editItemModal').style.display = 'flex'; };
+window.closeEditItemModal = function() { document.getElementById('editItemModal').style.display = 'none'; };
+window.saveEditedArchiveItem = function() { const archId = document.getElementById('editItemArchId').value; const archive = readArchive(); const idx = archive.findIndex(x => x.archId === archId); if (idx === -1) return; archive[idx].name = document.getElementById('editItemName').value.trim() || archive[idx].name; archive[idx].price = parseFloat(document.getElementById('editItemPrice').value) || 0; archive[idx].weight = parseFloat(document.getElementById('editItemWeight').value) || 1; archive[idx].unit = document.getElementById('editItemUnit').value; writeArchive(archive); pushArchiveToCloud(archive); closeEditItemModal(); loadSelectedMonthData(); };
+window.deleteArchiveItemFromModal = function() { const archId = document.getElementById('editItemArchId').value; closeEditItemModal(); deleteArchiveItem(archId); };
+window.deleteArchiveItem = function(archId) { if (!confirm("حذف هذه المادة من السجل؟")) return; const archive = readArchive().filter(x => x.archId !== archId); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
+window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); if (!confirm(`حذف جميع مواد يوم ${d}/${m}/${y}؟`)) return; const archive = readArchive().filter(it => { if (!it.timestamp) return true; const t = new Date(it.timestamp); return !(t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d); }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
+window.moveDayToAnotherDate = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`); if (!input) return; const parts = input.split('-').map(Number); if (parts.length !== 3 || parts.some(isNaN)) return; const [ny, nm, nd] = parts; const newDate = new Date(ny, nm - 1, nd); if (isNaN(newDate.getTime())) return; const archive = readArchive(); const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const newBaseTs = newDate.getTime(); let count = 0; archive.forEach(it => { if (!it.timestamp) return; const t = new Date(it.timestamp); if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) { it.timestamp = newBaseTs + count; it.archivedDate = newLabel; it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp; count++; } }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
+window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
 
-  document.getElementById('editItemArchId').value = item.archId;
-  document.getElementById('editItemName').value = item.name || '';
-  document.getElementById('editItemPrice').value = item.price || 0;
-  document.getElementById('editItemWeight').value = item.weight || 1;
-  document.getElementById('editItemUnit').value = item.unit || 'كغ';
-  document.getElementById('editItemModal').style.display = 'flex';
-}
-
-window.closeEditItemModal = function() {
-  document.getElementById('editItemModal').style.display = 'none';
-}
-
-window.saveEditedArchiveItem = async function() {
-  const archId = document.getElementById('editItemArchId').value;
-  const archive = readArchive();
-  const item = archive.find(i => i.archId === archId);
-  if (!item) return;
-
-  item.name = document.getElementById('editItemName').value.trim();
-  item.price = parseFloat(document.getElementById('editItemPrice').value) || 0;
-  item.weight = parseFloat(document.getElementById('editItemWeight').value) || 1;
-  item.unit = document.getElementById('editItemUnit').value;
-
-  writeArchive(archive);
-  await pushArchiveToCloud(archive);
-  closeEditItemModal();
-  window.loadSelectedMonthData();
-}
-
-window.deleteArchiveItemFromModal = async function() {
-  const archId = document.getElementById('editItemArchId').value;
-  if (!confirm('هل تريد حذف هذه المادة من الأرشيف نهائياً؟')) return;
-
-  let archive = readArchive();
-  archive = archive.filter(i => i.archId !== archId);
-  writeArchive(archive);
-  await pushArchiveToCloud(archive);
-  closeEditItemModal();
-  window.loadSelectedMonthData();
-}
-
-window.downloadPDF = function() {
-  const element = document.getElementById('monthlyReportPrintable');
-  if (!element) return;
-  const opt = {
-    margin: 10,
-    filename: 'baytna_monthly_report.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-  html2pdf().from(element).set(opt).save();
-}
-
-let calcValue = '0';
-let memoryValue = 0;
-
-window.openCalculator = function() {
-  document.getElementById('calculatorModal').style.display = 'flex';
-  updateCalcScreen();
-}
-window.closeCalculator = function() {
-  document.getElementById('calculatorModal').style.display = 'none';
-}
-
-window.pressCalc = function(char) {
-  if (calcValue === '0' && !['+', '-', '*', '/', '.'].includes(char)) {
-    calcValue = char;
-  } else {
-    calcValue += char;
-  }
-  updateCalcScreen();
-}
-
-window.clearCalc = function() {
-  calcValue = '0';
-  updateCalcScreen();
-}
-
-window.deleteCalcChar = function() {
-  if (calcValue.length > 1) {
-    calcValue = calcValue.slice(0, -1);
-  } else {
-    calcValue = '0';
-  }
-  updateCalcScreen();
-}
-
-window.calculateResult = function() {
-  try {
-    const sanitized = calcValue.replace(/×/g, '*').replace(/÷/g, '/');
-    const result = eval(sanitized);
-    calcValue = String(result);
-  } catch(e) {
-    calcValue = 'خطأ';
-  }
-  updateCalcScreen();
-}
-
-window.calcMemory = function(op) {
-  try {
-    const current = parseFloat(calcValue) || 0;
-    if (op === 'MC') memoryValue = 0;
-    else if (op === 'MR') { calcValue = String(memoryValue); }
-    else if (op === 'M+') { memoryValue += current; }
-  } catch(e) {}
-  updateCalcScreen();
-}
-
-function updateCalcScreen() {
-  const screen = document.getElementById('calcScreen');
-  if (screen) screen.innerText = calcValue;
-}
-
+/* ============ تصدير واستيراد البيانات ============ */
 window.exportData = function() {
-  const backup = {
-    todayItems: allItemsCache,
+  const data = {
     archive: readArchive(),
-    exportDate: new Date().toISOString()
+    items: allItemsCache,
+    exportedAt: new Date().toISOString()
   };
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'baytna_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.download = `baytna-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
+  alert('تم تصدير نسخة احتياطية من البيانات.');
+};
 
 window.importData = function(event) {
   const file = event.target.files[0];
@@ -995,23 +781,37 @@ window.importData = function(event) {
   reader.onload = async function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      if (data.todayItems && Array.isArray(data.todayItems)) {
-        allItemsCache = data.todayItems;
-        saveTodayLocalItems();
+      if (!data.items && !data.archive) throw new Error('ملف غير صالح');
+      if (confirm('سيتم استبدال البيانات الحالية بالبيانات المستوردة. هل أنت متأكد؟')) {
+        if (data.archive) writeArchive(data.archive);
+        if (data.items) {
+          allItemsCache = data.items;
+          saveTodayLocalItems();
+        }
         window.renderItemsList(allItemsCache);
-        for (const item of allItemsCache) await pushItemToCloud(item);
+        await pushArchiveToCloud(readArchive());
+        if (data.items) {
+          for (const item of data.items) {
+            await pushItemToCloud(item);
+          }
+        }
+        alert('تم استيراد البيانات بنجاح.');
       }
-      if (data.archive && Array.isArray(data.archive)) {
-        writeArchive(data.archive);
-        await pushArchiveToCloud(data.archive);
-      }
-      alert('تم استيراد البيانات ومزامنتها بنجاح!');
-    } catch(err) {
-      alert('ملف النسخ الاحتياطي غير صالح.');
+    } catch (err) {
+      alert('خطأ في قراءة الملف: ' + err.message);
     }
+    event.target.value = '';
   };
   reader.readAsText(file);
-}
+};
+
+/* ============ بدء التطبيق ============ */
+(function init() {
+  displayTodayHeaderInfo();
+  const savedName = localStorage.getItem(USER_PREFIX + 'name');
+  if (savedName) document.getElementById('usernameInput').value = savedName;
+  setSyncBadge('offline');
+})();
 </script>
 </body>
 </html>
