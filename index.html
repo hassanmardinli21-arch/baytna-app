@@ -50,7 +50,6 @@
   .action-main-btn { width: 100%; padding: 16px; margin-bottom: 12px; border: none; border-radius: 16px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(107, 144, 128, 0.25); }
   .archive-day-btn { width: 100%; padding: 16px; margin-bottom: 12px; border: none; border-radius: 16px; background: linear-gradient(135deg, #2D3A3A 0%, #1A2222 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(45, 58, 58, 0.3); }
   .monthly-big-btn { width: 100%; padding: 16px; margin-bottom: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(184, 123, 58, 0.3); }
-  .restore-btn { width: 100%; padding: 16px; margin-bottom: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, #B87B6E 0%, #8A4238 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(184, 123, 110, 0.3); }
   .today-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; margin-bottom: 12px; background: linear-gradient(135deg, #FFFFFF 0%, #F0EBE0 100%); border: 1px solid var(--border); border-radius: 14px; font-size: 14px; font-weight: 700; color: var(--primary-dark); }
   .search-wrap { position: relative; margin-bottom: 16px; }
   .search-input { width: 100%; padding: 14px 44px 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); font-size: 15px; font-family: inherit; color: var(--text); }
@@ -172,11 +171,6 @@
         </div>
       </div>
     </div>
-
-    <!-- زر الاستعادة الجديد -->
-    <button class="restore-btn" onclick="window.forceRestoreData()">
-      🔄 استعادة البيانات من السحابة (إصلاح)
-    </button>
 
     <button class="action-main-btn" onclick="openAddItemModal()">➕ إضافة مادة جديدة لليوم</button>
     <button class="archive-day-btn" onclick="archiveCurrentDay()">📥 أرشفة ونهاية اليوم (ترحيل للسجل وبدء يوم جديد)</button>
@@ -320,22 +314,18 @@ function setSyncBadge(state) {
   else el.innerText = '⚠️ غير متصل';
 }
 
-/* ============ زر الاستعادة السحري ============ */
-window.forceRestoreData = async function() {
-  if (!confirm("هل أنت متأكد من سحب البيانات من السحابة وإصلاح التكرارات؟")) return;
-  
+/* ============ دالة الاستعادة التلقائية عند تسجيل الدخول ============ */
+async function autoRestoreOnLogin(uid) {
   try {
-    setSyncBadge('syncing');
+    // جلب البيانات مباشرة من REST API لتجنب مشاكل الصلاحيات في SDK
     const projectId = "baytna-10";
-    const uid = currentUserUid || "C50ae9i2oNPIg0F7XCCInAMZ3EU2"; 
     const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/baytna_archives/${uid}`;
-    
     const res = await fetch(url);
-    if (!res.ok) throw new Error("تعذر جلب البيانات من السحابة");
-    const data = await res.json();
+    if (!res.ok) return; // لا توجد بيانات بعد
     
+    const data = await res.json();
     if (!data.fields || !data.fields.list || !data.fields.list.arrayValue || !data.fields.list.arrayValue.values) {
-      throw new Error("لا توجد بيانات محفوظة في السحابة");
+      return; // لا توجد قائمة
     }
     
     const rawList = data.fields.list.arrayValue.values.map(v => {
@@ -352,6 +342,7 @@ window.forceRestoreData = async function() {
       return obj;
     });
     
+    // تنظيف التكرارات
     const seen = new Set();
     const cleaned = [];
     rawList.forEach(it => {
@@ -364,24 +355,21 @@ window.forceRestoreData = async function() {
       }
     });
     
+    // حفظ في المتصفح
     writeArchive(cleaned);
+    console.log(`✅ تمت الاستعادة التلقائية: ${cleaned.length} مادة.`);
     
-    // مزامنة النسخة النظيفة إلى السحابة
+    // مزامنة النسخة النظيفة إلى السحابة لضمان بقائها
     await setDoc(doc(db, "baytna_archives", uid), {
       uid: uid,
       list: cleaned,
       updatedAt: new Date().toISOString()
     }, { merge: true });
     
-    setSyncBadge('online');
-    alert(`✅ تمت الاستعادة بنجاح!\nتم سحب ${rawList.length} مادة.\nتم حذف التكرارات، المتبقي ${cleaned.length} مادة.\nسيتم تحديث السجل الآن.`);
-    window.loadSelectedMonthData();
-    
   } catch (e) {
-    setSyncBadge('offline');
-    alert("❌ حدث خطأ: " + e.message);
+    console.warn("الاستعادة التلقائية فشلت أو لا توجد بيانات:", e);
   }
-};
+}
 
 /* ============ Firestore: مزامنة المواد والأرشيف لكل حساب ============ */
 function cloudItemRef(itemId) {
@@ -553,9 +541,13 @@ function showHomeForUser(user) {
   displayTodayHeaderInfo();
   loadTodayLocalItems();
   setSyncBadge('syncing');
-  startCloudListener();
-  startArchiveListener();
-  showAuthMessage('تم تسجيل الدخول. جارٍ مزامنة بيانات حسابك…', false);
+  
+  // تشغيل الاستعادة التلقائية أولاً قبل بدء المراقبة
+  autoRestoreOnLogin(user.uid).then(() => {
+    startCloudListener();
+    startArchiveListener();
+    showAuthMessage('تم تسجيل الدخول. جارٍ مزامنة بيانات حسابك…', false);
+  });
 }
 
 /* ============ المصادقة بالبريد وكلمة المرور ============ */
