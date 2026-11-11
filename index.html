@@ -268,7 +268,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- إعدادات مشروعك الجديد Baytna-10 ---
 const firebaseConfig = {
   apiKey: "AIzaSyDXVClsWhLOc3m710m2Fy6p5KncFIHQTCU",
   authDomain: "baytna-10.firebaseapp.com",
@@ -375,6 +374,7 @@ function startCloudListener() {
     const cloudItems = [];
     snapshot.forEach(d => cloudItems.push({ ...d.data(), id: d.data().id || d.id }));
     const todayFormatted = new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    // 🌟 التعديل هنا: تصفية المواد بحيث لا تظهر إلا مواد اليوم فقط
     const visibleCloudItems = cloudItems.filter(item => item.formattedDate === todayFormatted || item.status === 'active' || item.status === 'done');
 
     if (!initialItemsSnapshotLoaded) {
@@ -612,14 +612,25 @@ function archiveItemsToStore(items, dateObj, silent) {
   return added;
 }
 
+/* 🌟 هنا التعديل الأساسي: حذف المواد من السحابة بعد أرشفتها */
 window.archiveCurrentDay = async function() {
   if (allItemsCache.length === 0) { alert("لا توجد مواد مسجلة اليوم لأرشفتها!"); return; }
   if (!confirm("أرشفة مشتريات اليوم في السجل الشهري، وبدء يوم جديد؟")) return;
+  
+  // 1. أرشفة المواد
   const added = archiveItemsToStore(allItemsCache, new Date(), false);
+  
+  // 2. حذف المواد من السحابة (حتى لا تعود للظهور)
+  const itemsToDelete = [...allItemsCache];
   allItemsCache = [];
   localStorage.removeItem(todayKey());
   window.renderItemsList(allItemsCache);
-  alert(`تمت أرشفة ${added} مادة.`);
+  
+  for (const item of itemsToDelete) {
+    await deleteItemFromCloud(item.id);
+  }
+  
+  alert(`تمت أرشفة ${added} مادة، وبدأ يوم جديد.`);
 };
 
 /* ============ الحاسبة ============ */
