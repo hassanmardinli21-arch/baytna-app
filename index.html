@@ -50,6 +50,7 @@
   .action-main-btn { width: 100%; padding: 16px; margin-bottom: 12px; border: none; border-radius: 16px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(107, 144, 128, 0.25); }
   .archive-day-btn { width: 100%; padding: 16px; margin-bottom: 12px; border: none; border-radius: 16px; background: linear-gradient(135deg, #2D3A3A 0%, #1A2222 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(45, 58, 58, 0.3); }
   .monthly-big-btn { width: 100%; padding: 16px; margin-bottom: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, #C9A961 0%, #B87B3A 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(184, 123, 58, 0.3); }
+  .restore-btn { width: 100%; padding: 16px; margin-bottom: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, #B87B6E 0%, #8A4238 100%); color: white; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 18px rgba(184, 123, 110, 0.3); }
   .today-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; margin-bottom: 12px; background: linear-gradient(135deg, #FFFFFF 0%, #F0EBE0 100%); border: 1px solid var(--border); border-radius: 14px; font-size: 14px; font-weight: 700; color: var(--primary-dark); }
   .search-wrap { position: relative; margin-bottom: 16px; }
   .search-input { width: 100%; padding: 14px 44px 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); font-size: 15px; font-family: inherit; color: var(--text); }
@@ -172,6 +173,11 @@
       </div>
     </div>
 
+    <!-- زر الاستعادة الجديد -->
+    <button class="restore-btn" onclick="window.forceRestoreData()">
+      🔄 استعادة البيانات من السحابة (إصلاح)
+    </button>
+
     <button class="action-main-btn" onclick="openAddItemModal()">➕ إضافة مادة جديدة لليوم</button>
     <button class="archive-day-btn" onclick="archiveCurrentDay()">📥 أرشفة ونهاية اليوم (ترحيل للسجل وبدء يوم جديد)</button>
     <button class="monthly-big-btn" onclick="showMonthlyReport()">📅 تصفح السجل الشهري والأرشيف وحفظ PDF</button>
@@ -255,7 +261,7 @@
     <div class="month-picker-row">
       <select id="yearSelect" class="select-field" onchange="loadSelectedMonthData()"><option value="2026" selected>2026</option><option value="2025">2025</option></select>
       <select id="monthSelect" class="select-field" onchange="loadSelectedMonthData()">
-        <option value="1">كانون الثاني (يناير)</option><option value="2">شباط (فبراير)</option><option value="3">آذار (مارس)</option><option value="4">نيسان (أبريل)</option><option value="5">أيار (مايو)</option><option value="6">حزيران (يونيو)</option><option value="7">تموز (يوليو)</option><option value="8">آب (أغسطس)</option><option value="9">أيلول (سبتمبر)</option><option value="10" selected>تشرين الأول (أكتوبر)</option><option value="11">تشرين الثاني (نوفمبر)</option><option value="12">كانون الأول (ديسمبر)</option>
+        <option value="1">كانون الثاني (يناير)</option><option value="2">شباط (فبراير)</option><option value="3">آذار (مارس)</option><option value="4">نيسان (أبريل)</option><option value="5">أيار (مايو)</option><option value="6">حزيران (يونيو)</option><option value="7">تموز (يوليو)</option><option value="8">آب (أغسطس)</option><option value="9">أيلول (سبتمبر)</option><option value="10">تشرين الأول (أكتوبر)</option><option value="11" selected>تشرين الثاني (نوفمبر)</option><option value="12">كانون الأول (ديسمبر)</option>
       </select>
     </div>
     <div id="monthlyReportPrintable"><div id="monthlyContent" style="background: var(--card); padding: 16px; border-radius: 16px; border: 1px solid var(--border);"><p style="text-align: center; color: var(--text-light);">جارِ جلب الأرشيف...</p></div></div>
@@ -268,7 +274,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- إعدادات مشروعك الجديد Baytna-10 ---
 const firebaseConfig = {
   apiKey: "AIzaSyDXVClsWhLOc3m710m2Fy6p5KncFIHQTCU",
   authDomain: "baytna-10.firebaseapp.com",
@@ -314,6 +319,69 @@ function setSyncBadge(state) {
   else if (state === 'syncing') el.innerText = '⏳ جارٍ';
   else el.innerText = '⚠️ غير متصل';
 }
+
+/* ============ زر الاستعادة السحري ============ */
+window.forceRestoreData = async function() {
+  if (!confirm("هل أنت متأكد من سحب البيانات من السحابة وإصلاح التكرارات؟")) return;
+  
+  try {
+    setSyncBadge('syncing');
+    const projectId = "baytna-10";
+    const uid = currentUserUid || "C50ae9i2oNPIg0F7XCCInAMZ3EU2"; 
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/baytna_archives/${uid}`;
+    
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("تعذر جلب البيانات من السحابة");
+    const data = await res.json();
+    
+    if (!data.fields || !data.fields.list || !data.fields.list.arrayValue || !data.fields.list.arrayValue.values) {
+      throw new Error("لا توجد بيانات محفوظة في السحابة");
+    }
+    
+    const rawList = data.fields.list.arrayValue.values.map(v => {
+      const obj = {};
+      if (v.mapValue && v.mapValue.fields) {
+        for (const [k, val] of Object.entries(v.mapValue.fields)) {
+          if (val.stringValue !== undefined) obj[k] = val.stringValue;
+          else if (val.integerValue !== undefined) obj[k] = parseInt(val.integerValue);
+          else if (val.doubleValue !== undefined) obj[k] = parseFloat(val.doubleValue);
+          else if (val.booleanValue !== undefined) obj[k] = val.booleanValue;
+          else if (val.timestampValue !== undefined) obj[k] = val.timestampValue;
+        }
+      }
+      return obj;
+    });
+    
+    const seen = new Set();
+    const cleaned = [];
+    rawList.forEach(it => {
+      const ts = it.timestamp ? new Date(it.timestamp) : null;
+      const dateKey = ts ? `${ts.getFullYear()}-${ts.getMonth()+1}-${ts.getDate()}` : (it.archivedDate || it.date || '');
+      const key = `${it.id || it.name}__${dateKey}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        cleaned.push(it);
+      }
+    });
+    
+    writeArchive(cleaned);
+    
+    // مزامنة النسخة النظيفة إلى السحابة
+    await setDoc(doc(db, "baytna_archives", uid), {
+      uid: uid,
+      list: cleaned,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    
+    setSyncBadge('online');
+    alert(`✅ تمت الاستعادة بنجاح!\nتم سحب ${rawList.length} مادة.\nتم حذف التكرارات، المتبقي ${cleaned.length} مادة.\nسيتم تحديث السجل الآن.`);
+    window.loadSelectedMonthData();
+    
+  } catch (e) {
+    setSyncBadge('offline');
+    alert("❌ حدث خطأ: " + e.message);
+  }
+};
 
 /* ============ Firestore: مزامنة المواد والأرشيف لكل حساب ============ */
 function cloudItemRef(itemId) {
@@ -605,7 +673,6 @@ function archiveItemsToStore(items, dateObj, silent) {
   if (!items || items.length === 0) return 0;
 
   const archive = readArchive();
-  // تثبيت الأساس على منتصف ليل اليوم المحلي لتفادي مشاكل المناطق الزمنية
   const baseDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 0, 0, 0, 0);
   const formattedDate = baseDate.toLocaleDateString('ar-SY', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -708,14 +775,13 @@ window.deleteItem = function(id) { if (!confirm("حذف هذه المادة نه
 /* ============ السجل الشهري ============ */
 window.showMonthlyReport = async function() {
   document.getElementById('monthlyModal').style.display = 'flex';
-  // لا نضيف أي شيء إلى الأرشيف هنا. الأرشيف يُكتب فقط عند "أرشفة ونهاية اليوم".
   loadSelectedMonthData();
 };
 window.closeMonthlyReport = function() { document.getElementById('monthlyModal').style.display = 'none'; };
 
 window.loadSelectedMonthData = function() {
   const year = parseInt(document.getElementById('yearSelect')?.value || '2026');
-  const month = parseInt(document.getElementById('monthSelect')?.value || '10');
+  const month = parseInt(document.getElementById('monthSelect')?.value || '11');
   const container = document.getElementById('monthlyContent');
   if (!container) return;
 
@@ -741,7 +807,6 @@ window.loadSelectedMonthData = function() {
     byDay[dayKey].total += sub;
   });
 
-  // ترتيب الأيام من الأحدث إلى الأقدم
   const days = Object.keys(byDay).map(Number).sort((a, b) => b - a);
 
   let grandTotal = 0, totalCount = 0;
@@ -779,7 +844,6 @@ window.moveDayToAnotherDate = function(dayKeyStr) {
   const parts = input.split('-').map(Number);
   if (parts.length !== 3 || parts.some(isNaN)) return;
   const [ny, nm, nd] = parts;
-  // منتصف ليل محلي —— مهم جدًا لتفادي انزياح اليوم/الشهر
   const newDate = new Date(ny, nm - 1, nd, 0, 0, 0, 0);
   if (isNaN(newDate.getTime())) return;
 
