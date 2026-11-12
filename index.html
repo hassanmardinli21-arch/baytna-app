@@ -1,62 +1,18 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>بيتنا</title>
-<style>
-  body { font-family: sans-serif; background: #f5f1ea; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-  .box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-  input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-  button { width: 100%; padding: 12px; background: #6B9080; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-  button:hover { background: #4A6D5F; }
-  #msg { margin-top: 15px; color: red; font-size: 14px; }
-</style>
-</head>
-<body>
-<div class="box">
-  <h2>🏠 بيتنا</h2>
-  <input type="email" id="email" value="hassanmardinli21@gmail.com" placeholder="البريد الإلكتروني">
-  <input type="password" id="pass" placeholder="كلمة المرور">
-  <button onclick="login()">تسجيل الدخول</button>
-  <div id="msg"></div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDXVClsWhLOc3m710m2Fy6p5KncFIHQTCU",
-  authDomain: "baytna-10.firebaseapp.com",
-  projectId: "baytna-10",
-  storageBucket: "baytna-10.firebasestorage.app",
-  messagingSenderId: "480526325243",
-  appId: "1:480526325243:web:444940ce97845bf727a75e"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-window.login = async function() {
-  const email = document.getElementById('email').value;
-  const pass = document.getElementById('pass').value;
-  const msg = document.getElementById('msg');
-  
+import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js").then(async ({ getAuth, signInWithEmailAndPassword }) => {
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const app = initializeApp({
+    apiKey: "AIzaSyDXVClsWhLOc3m710m2Fy6p5KncFIHQTCU",
+    authDomain: "baytna-10.firebaseapp.com",
+    projectId: "baytna-10",
+    storageBucket: "baytna-10.firebasestorage.app",
+    messagingSenderId: "480526325243",
+    appId: "1:480526325243:web:444940ce97845bf727a75e"
+  });
+  const auth = getAuth(app);
   try {
-    msg.style.color = 'green';
-    msg.innerText = 'جارٍ تسجيل الدخول...';
-    await signInWithEmailAndPassword(auth, email, pass);
-    msg.innerText = '✅ تم تسجيل الدخول بنجاح! جارٍ تحويلك...';
-    setTimeout(() => {
-      // هنا سنضع كود جلب البيانات لاحقاً
-      window.location.href = "https://baytna-e0a77.web.app"; // العودة للتطبيق الأصلي
-    }, 1000);
+    await signInWithEmailAndPassword(auth, "hassanmardinli21@gmail.com", "كلمة_المرور_هنا");
+    alert("✅ نجح الاتصال بـ Firebase! كلمة المرور صحيحة.");
   } catch (e) {
-    msg.style.color = 'red';
-    msg.innerText = '❌ فشل الدخول: ' + e.message;
+    alert("❌ فشل: " + e.message);
   }
-};
-</script>
-</body>
-</html>
+});
