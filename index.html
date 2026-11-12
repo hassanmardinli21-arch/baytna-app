@@ -111,7 +111,6 @@
 </head>
 <body>
 
-<!-- شاشة تسجيل الدخول -->
 <div id="loginScreen" class="login-wrap">
   <div class="login-logo">🏠</div>
   <div class="login-title">بيتنا</div>
@@ -136,7 +135,6 @@
   </div>
 </div>
 
-<!-- الشاشة الرئيسية -->
 <div id="homeScreen" style="display: none;">
   <div class="app-header">
     <div class="header-title">بيت <span id="usernameDisplay">حسان</span> <span>🏠</span></div>
@@ -173,7 +171,6 @@
       </div>
     </div>
 
-    <!-- زر تصفية التكرارات (الزر العبقري) -->
     <button class="clean-btn" onclick="window.cleanDuplicates()">
       🧹 تصفية التكرارات من السجل (إصلاح)
     </button>
@@ -205,7 +202,6 @@
   <button class="calc-fab" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
 </div>
 
-<!-- النوافذ المنبثقة -->
 <div id="addItemModal" class="modal-overlay">
   <div class="sheet">
     <div class="sheet-title"><span>➕ إضافة مادة جديدة</span><button class="sheet-close" onclick="closeAddItemModal()">✕</button></div>
@@ -655,7 +651,11 @@ window.markItemDone = function(id) { const item = allItemsCache.find(i => i.id =
 window.cancelItem = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; item.status = 'cancelled'; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
 window.deleteItem = function(id) { if (!confirm("حذف هذه المادة نهائياً؟")) return; allItemsCache = allItemsCache.filter(i => i.id !== id); saveTodayLocalItems(); window.renderItemsList(allItemsCache); deleteItemFromCloud(id); };
 
-window.showMonthlyReport = async function() { document.getElementById('monthlyModal').style.display = 'flex'; loadSelectedMonthData(); };
+window.showMonthlyReport = async function() {
+  document.getElementById('monthlyModal').style.display = 'flex';
+  // تم إزالة الكود الذي كان يضيف تكرارات هنا
+  loadSelectedMonthData();
+};
 window.closeMonthlyReport = function() { document.getElementById('monthlyModal').style.display = 'none'; };
 
 window.loadSelectedMonthData = function() {
