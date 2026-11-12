@@ -271,7 +271,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, query, where, onSnapshot, doc, setDoc, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// --- إعدادات مشروعك الجديد Baytna-10 ---
 const firebaseConfig = {
   apiKey: "AIzaSyDXVClsWhLOc3m710m2Fy6p5KncFIHQTCU",
   authDomain: "baytna-10.firebaseapp.com",
@@ -318,89 +317,15 @@ function setSyncBadge(state) {
   else el.innerText = '⚠️ غير متصل';
 }
 
-/* ============ دالة تصفية التكرارات (الزر العبقري) ============ */
-window.cleanDuplicates = async function() {
-  if (!confirm("هل أنت متأكد من تصفية جميع التكرارات في السجل الشهري؟")) return;
-  
-  try {
-    setSyncBadge('syncing');
-    const projectId = "baytna-10";
-    const uid = currentUserUid || "C50ae9i2oNPIg0F7XCCInAMZ3EU2"; 
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/baytna_archives/${uid}`;
-    
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("تعذر جلب البيانات من السحابة");
-    const data = await res.json();
-    
-    if (!data.fields || !data.fields.list || !data.fields.list.arrayValue || !data.fields.list.arrayValue.values) {
-      throw new Error("لا توجد بيانات محفوظة في السحابة");
-    }
-    
-    const rawList = data.fields.list.arrayValue.values.map(v => {
-      const obj = {};
-      if (v.mapValue && v.mapValue.fields) {
-        for (const [k, val] of Object.entries(v.mapValue.fields)) {
-          if (val.stringValue !== undefined) obj[k] = val.stringValue;
-          else if (val.integerValue !== undefined) obj[k] = parseInt(val.integerValue);
-          else if (val.doubleValue !== undefined) obj[k] = parseFloat(val.doubleValue);
-          else if (val.booleanValue !== undefined) obj[k] = val.booleanValue;
-          else if (val.timestampValue !== undefined) obj[k] = val.timestampValue;
-        }
-      }
-      return obj;
-    });
-
-    const seen = new Set();
-    const cleaned = [];
-    rawList.forEach(it => {
-      const ts = it.timestamp ? new Date(it.timestamp) : null;
-      const dateKey = ts ? `${ts.getFullYear()}-${ts.getMonth()+1}-${ts.getDate()}` : (it.archivedDate || it.date || '');
-      const key = `${it.name}_${dateKey}_${it.price}_${it.weight}`;
-      
-      if (!seen.has(key)) {
-        seen.add(key);
-        cleaned.push(it);
-      }
-    });
-
-    writeArchive(cleaned);
-    
-    await setDoc(doc(db, "baytna_archives", uid), {
-      uid: uid,
-      list: cleaned,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-
-    setSyncBadge('online');
-    alert(`✅ تمت التصفية بنجاح!\nالعدد الأصلي: ${rawList.length}\nالعدد بعد التصفية: ${cleaned.length}\nسيتم تحديث السجل الآن.`);
-    window.loadSelectedMonthData();
-    
-  } catch (e) {
-    setSyncBadge('offline');
-    alert("❌ حدث خطأ: " + e.message);
-  }
-};
-
-/* ============ Firestore: مزامنة المواد والأرشيف لكل حساب ============ */
-function cloudItemRef(itemId) {
-  return doc(db, ITEMS_COLLECTION, currentUserUid + "_" + itemId);
-}
+function cloudItemRef(itemId) { return doc(db, ITEMS_COLLECTION, currentUserUid + "_" + itemId); }
 
 async function pushItemToCloud(item) {
   if (!currentUserUid) return;
   try {
     setSyncBadge('syncing');
-    await setDoc(cloudItemRef(item.id), {
-      ...item,
-      uid: currentUserUid,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    await setDoc(cloudItemRef(item.id), { ...item, uid: currentUserUid, updatedAt: new Date().toISOString() }, { merge: true });
     setSyncBadge('online');
-  } catch (e) {
-    console.error('pushItemToCloud', e);
-    setSyncBadge('offline');
-    showAuthMessage(firebaseErrorMessage(e), true);
-  }
+  } catch (e) { console.error('pushItemToCloud', e); setSyncBadge('offline'); }
 }
 
 async function deleteItemFromCloud(itemId) {
@@ -409,29 +334,17 @@ async function deleteItemFromCloud(itemId) {
     setSyncBadge('syncing');
     await deleteDoc(cloudItemRef(itemId));
     setSyncBadge('online');
-  } catch (e) {
-    console.error('deleteItemFromCloud', e);
-    setSyncBadge('offline');
-  }
+  } catch (e) { console.error('deleteItemFromCloud', e); setSyncBadge('offline'); }
 }
 
 async function pushArchiveToCloud(archiveList) {
-  if (!currentUserUid) return;
+  if (!currentUserUid) return false;
   try {
     setSyncBadge('syncing');
-    await setDoc(doc(db, "baytna_archives", currentUserUid), {
-      uid: currentUserUid,
-      list: archiveList,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    await setDoc(doc(db, "baytna_archives", currentUserUid), { uid: currentUserUid, list: archiveList, updatedAt: new Date().toISOString() }, { merge: true });
     setSyncBadge('online');
     return true;
-  } catch (e) {
-    console.error('pushArchiveToCloud', e);
-    setSyncBadge('offline');
-    showAuthMessage(firebaseErrorMessage(e), true);
-    return false;
-  }
+  } catch (e) { console.error('pushArchiveToCloud', e); setSyncBadge('offline'); return false; }
 }
 
 function startCloudListener() {
@@ -443,39 +356,26 @@ function startCloudListener() {
     const cloudItems = [];
     snapshot.forEach(d => cloudItems.push({ ...d.data(), id: d.data().id || d.id }));
     const todayFormatted = new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-    const isVisibleTodayItem = (item) => {
-      const itemDate = item.formattedDate || item.date || '';
-      return item.archived !== true && itemDate === todayFormatted;
-    };
+    const isVisibleTodayItem = (item) => (item.archived !== true && (item.formattedDate || item.date) === todayFormatted);
     const visibleCloudItems = cloudItems.filter(isVisibleTodayItem);
 
     if (!initialItemsSnapshotLoaded) {
       const mergedById = new Map();
-      allItemsCache
-        .filter(isVisibleTodayItem)
-        .forEach(item => mergedById.set(item.id, item));
+      allItemsCache.filter(isVisibleTodayItem).forEach(item => mergedById.set(item.id, item));
       visibleCloudItems.forEach(item => mergedById.set(item.id, item));
       allItemsCache = Array.from(mergedById.values());
       initialItemsSnapshotLoaded = true;
       saveTodayLocalItems();
       window.renderItemsList(allItemsCache);
-
       const cloudIds = new Set(cloudItems.map(item => item.id));
-      for (const localItem of allItemsCache) {
-        if (!cloudIds.has(localItem.id)) await pushItemToCloud(localItem);
-      }
+      for (const localItem of allItemsCache) { if (!cloudIds.has(localItem.id)) await pushItemToCloud(localItem); }
     } else {
       allItemsCache = visibleCloudItems;
       saveTodayLocalItems();
       window.renderItemsList(allItemsCache);
     }
     setSyncBadge('online');
-  }, (error) => {
-    console.error('items snapshot error', error);
-    setSyncBadge('offline');
-    showAuthMessage(firebaseErrorMessage(error), true);
-  });
+  }, (error) => { setSyncBadge('offline'); });
 }
 
 function startArchiveListener() {
@@ -486,10 +386,7 @@ function startArchiveListener() {
   unsubscribeArchiveSnapshot = onSnapshot(archiveRef, async (snapshot) => {
     const localArchive = readArchive();
     if (!snapshot.exists()) {
-      if (!initialArchiveSnapshotLoaded && localArchive.length) {
-        await pushArchiveToCloud(localArchive);
-        return;
-      }
+      if (!initialArchiveSnapshotLoaded && localArchive.length) { await pushArchiveToCloud(localArchive); return; }
       initialArchiveSnapshotLoaded = true;
       setSyncBadge('online');
       return;
@@ -508,36 +405,17 @@ function startArchiveListener() {
     }
     if (document.getElementById('monthlyModal')?.style.display === 'flex') window.loadSelectedMonthData();
     setSyncBadge('online');
-  }, (error) => {
-    console.error('archive snapshot error', error);
-    setSyncBadge('offline');
-    showAuthMessage(firebaseErrorMessage(error), true);
-  });
+  }, (error) => { setSyncBadge('offline'); });
 }
 
 function showAuthMessage(message, isError = false) {
   const el = document.getElementById('authMessage');
-  if (el) {
-    el.textContent = message || '';
-    el.style.color = isError ? 'var(--danger)' : 'var(--success-dark)';
-  }
+  if (el) { el.textContent = message || ''; el.style.color = isError ? 'var(--danger)' : 'var(--success-dark)'; }
 }
 
 function firebaseErrorMessage(error) {
   const code = error?.code || '';
-  const messages = {
-    'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة.',
-    'auth/missing-password': 'يرجى إدخال كلمة المرور.',
-    'auth/weak-password': 'كلمة المرور ضعيفة؛ استخدم 6 أحرف على الأقل.',
-    'auth/email-already-in-use': 'هذا البريد مسجل مسبقاً. استخدم تسجيل الدخول.',
-    'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
-    'auth/user-not-found': 'لا يوجد حساب بهذا البريد. أنشئ حساباً جديداً أولاً.',
-    'auth/wrong-password': 'كلمة المرور غير صحيحة.',
-    'auth/too-many-requests': 'محاولات كثيرة؛ انتظر قليلاً ثم حاول مجدداً.',
-    'auth/network-request-failed': 'تعذر الاتصال بالإنترنت. تحقق من الشبكة.',
-    'permission-denied': 'رفضت قواعد Firestore الوصول. يجب تحديث قواعد الأمان.',
-    'unavailable': 'خدمة Firebase غير متاحة حالياً. حاول بعد قليل.'
-  };
+  const messages = { 'auth/invalid-email': 'صيغة البريد الإلكتروني غير صحيحة.', 'auth/missing-password': 'يرجى إدخال كلمة المرور.', 'auth/weak-password': 'كلمة المرور ضعيفة؛ استخدم 6 أحرف على الأقل.', 'auth/email-already-in-use': 'هذا البريد مسجل مسبقاً. استخدم تسجيل الدخول.', 'auth/invalid-credential': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'auth/user-not-found': 'لا يوجد حساب بهذا البريد. أنشئ حساباً جديداً أولاً.', 'auth/wrong-password': 'كلمة المرور غير صحيحة.', 'auth/too-many-requests': 'محاولات كثيرة؛ انتظر قليلاً ثم حاول مجدداً.', 'auth/network-request-failed': 'تعذر الاتصال بالإنترنت. تحقق من الشبكة.', 'permission-denied': 'رفضت قواعد Firestore الوصول. يجب تحديث قواعد الأمان.', 'unavailable': 'خدمة Firebase غير متاحة حالياً. حاول بعد قليل.' };
   return messages[code] || ('تعذر إكمال العملية: ' + (error?.message || code || 'خطأ غير معروف'));
 }
 
@@ -558,7 +436,6 @@ function showHomeForUser(user) {
   showAuthMessage('تم تسجيل الدخول. جارٍ مزامنة بيانات حسابك…', false);
 }
 
-/* ============ المصادقة بالبريد وكلمة المرور ============ */
 window.doLogin = async function() {
   const email = document.getElementById('emailInput').value.trim();
   const password = document.getElementById('passwordInput').value;
@@ -568,12 +445,7 @@ window.doLogin = async function() {
   try {
     await signInWithEmailAndPassword(auth, email, password);
     showAuthMessage('تم تسجيل الدخول بنجاح.', false);
-  } catch (e) {
-    console.error('sign in error', e);
-    showAuthMessage(firebaseErrorMessage(e), true);
-  } finally {
-    if (button) { button.disabled = false; button.textContent = 'تسجيل الدخول'; }
-  }
+  } catch (e) { showAuthMessage(firebaseErrorMessage(e), true); } finally { if (button) { button.disabled = false; button.textContent = 'تسجيل الدخول'; } }
 };
 
 window.registerAccount = async function() {
@@ -586,10 +458,7 @@ window.registerAccount = async function() {
     await createUserWithEmailAndPassword(auth, email, password);
     localStorage.setItem(USER_PREFIX + 'name', name);
     showAuthMessage('تم إنشاء الحساب بنجاح. احفظ كلمة المرور لديك.', false);
-  } catch (e) {
-    console.error('register error', e);
-    showAuthMessage(firebaseErrorMessage(e), true);
-  }
+  } catch (e) { showAuthMessage(firebaseErrorMessage(e), true); }
 };
 
 window.resetPassword = async function() {
@@ -598,21 +467,13 @@ window.resetPassword = async function() {
   try {
     await sendPasswordResetEmail(auth, email);
     showAuthMessage('أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.', false);
-  } catch (e) {
-    console.error('password reset error', e);
-    showAuthMessage(firebaseErrorMessage(e), true);
-  }
+  } catch (e) { showAuthMessage(firebaseErrorMessage(e), true); }
 };
 
-window.logout = async function() {
-  try { await signOut(auth); }
-  catch (e) { console.error('logout error', e); showAuthMessage(firebaseErrorMessage(e), true); }
-};
+window.logout = async function() { try { await signOut(auth); } catch (e) {} };
 
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    showHomeForUser(user);
-  } else {
+  if (user) { showHomeForUser(user); } else {
     currentUserUid = null;
     initialItemsSnapshotLoaded = false;
     initialArchiveSnapshotLoaded = false;
@@ -624,7 +485,6 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-/* ============ دوال واجهة المستخدم ============ */
 window.openAddItemModal = function() {
   document.getElementById('itemNameInput').value = '';
   document.getElementById('itemPriceInput').value = '';
@@ -643,12 +503,7 @@ window.submitNewItem = async function() {
   const unit = document.getElementById('itemUnitInput').value;
   const formattedDate = new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  const newItem = {
-    id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    name, price, weight, unit, status: 'active',
-    date: formattedDate, formattedDate
-  };
-
+  const newItem = { id: 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), name, price, weight, unit, status: 'active', date: formattedDate, formattedDate };
   allItemsCache.unshift(newItem);
   saveTodayLocalItems();
   window.renderItemsList(allItemsCache);
@@ -664,34 +519,20 @@ function loadTodayLocalItems() {
   window.renderItemsList(allItemsCache);
 }
 
-function saveTodayLocalItems() {
-  localStorage.setItem(todayKey(), JSON.stringify(allItemsCache));
-}
+function saveTodayLocalItems() { localStorage.setItem(todayKey(), JSON.stringify(allItemsCache)); }
 
-/* ============ الأرشفة ============ */
 function archiveItemsToStore(items, dateObj, silent) {
   if (!items || items.length === 0) return 0;
-
   const archive = readArchive();
-  const formattedDate = dateObj.toLocaleDateString('ar-SY', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  });
+  const formattedDate = dateObj.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const baseTs = dateObj.getTime();
   let added = 0;
-
   items.forEach((item, idx) => {
     const archId = 'arch_' + item.id + '_' + baseTs;
     if (archive.some(x => x.archId === archId)) return;
-
-    archive.push({
-      ...item,
-      archId,
-      archivedDate: formattedDate,
-      timestamp: baseTs + idx
-    });
+    archive.push({ ...item, archId, archivedDate: formattedDate, timestamp: baseTs + idx });
     added++;
   });
-
   writeArchive(archive);
   localStorage.setItem('baytna_last_archive_date', new Date().toDateString());
   return added;
@@ -699,40 +540,21 @@ function archiveItemsToStore(items, dateObj, silent) {
 
 window.archiveCurrentDay = async function() {
   allItemsCache = allItemsCache.filter(item => item.archived !== true);
-
-  if (allItemsCache.length === 0) {
-    alert("لا توجد مواد مسجلة اليوم لأرشفتها!");
-    return;
-  }
-
+  if (allItemsCache.length === 0) { alert("لا توجد مواد مسجلة اليوم لأرشفتها!"); return; }
   if (!confirm("أرشفة مشتريات اليوم في السجل الشهري، وبدء يوم جديد؟")) return;
-
   const dateNow = new Date();
-  const itemsToArchive = allItemsCache.map(item => ({
-    ...item,
-    archived: true,
-    archivedAt: dateNow.toISOString()
-  }));
-
+  const itemsToArchive = allItemsCache.map(item => ({ ...item, archived: true, archivedAt: dateNow.toISOString() }));
   const added = archiveItemsToStore(itemsToArchive, dateNow, false);
-
   try {
     await pushArchiveToCloud(readArchive());
-    for (const item of itemsToArchive) {
-      await pushItemToCloud(item);
-    }
-
+    for (const item of itemsToArchive) await pushItemToCloud(item);
     allItemsCache = [];
     localStorage.removeItem(todayKey());
     window.renderItemsList(allItemsCache);
     alert(`تمت أرشفة ${added} مادة وبدء يوم جديد.`);
-  } catch (error) {
-    console.error('archiveCurrentDay error', error);
-    alert("تعذر إكمال المزامنة. بقيت المواد ظاهرة؛ تحقق من الاتصال ثم حاول مجدداً.");
-  }
+  } catch (error) { alert("تعذر إكمال المزامنة."); }
 };
 
-/* ============ الحاسبة ============ */
 let calcExpression = "", calcMemoryValue = 0;
 window.openCalculator = function() { document.getElementById('calculatorModal').style.display = 'flex'; };
 window.closeCalculator = function() { document.getElementById('calculatorModal').style.display = 'none'; };
@@ -742,7 +564,6 @@ window.deleteCalcChar = function() { calcExpression = calcExpression.slice(0, -1
 window.calculateResult = function() { try { let res = eval(calcExpression); document.getElementById('calcScreen').innerText = res; calcExpression = res.toString(); } catch (e) { document.getElementById('calcScreen').innerText = "خطأ"; calcExpression = ""; } };
 window.calcMemory = function(action) { const s = document.getElementById('calcScreen'); if (action === 'MC') { calcMemoryValue = 0; s.innerText = "0"; calcExpression = ""; } else if (action === 'MR') { calcExpression += calcMemoryValue.toString(); s.innerText = calcExpression; } else if (action === 'M+') { try { calcMemoryValue += eval(calcExpression) || 0; s.innerText = "تم الحفظ"; setTimeout(() => { s.innerText = calcExpression || "0"; }, 800); } catch(e) {} } };
 
-/* ============ عرض القائمة ============ */
 window.renderItemsList = function(items) {
   const listContainer = document.getElementById('itemsList');
   if (!listContainer) return;
@@ -771,132 +592,19 @@ window.markItemDone = function(id) { const item = allItemsCache.find(i => i.id =
 window.cancelItem = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; item.status = 'cancelled'; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
 window.deleteItem = function(id) { if (!confirm("حذف هذه المادة نهائياً؟")) return; allItemsCache = allItemsCache.filter(i => i.id !== id); saveTodayLocalItems(); window.renderItemsList(allItemsCache); deleteItemFromCloud(id); };
 
-/* ============ حذف شهر كامل من الجهاز وFirebase ============ */
-function normalizeArabicDigits(value) {
-  return String(value ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
-}
-
-function itemBelongsToMonth(item, targetYear, targetMonth) {
-  if (!item) return false;
-
-  if (item.timestamp !== undefined && item.timestamp !== null && item.timestamp !== '') {
-    const stamp = Number(item.timestamp);
-    if (Number.isFinite(stamp)) {
-      const d = new Date(stamp);
-      if (d.getFullYear() === targetYear && d.getMonth() + 1 === targetMonth) return true;
-    }
-  }
-
-  const raw = normalizeArabicDigits(item.formattedDate || item.date || '');
-  const yearMatch = raw.match(/(?:^|\D)(20\d{2})(?:\D|$)/);
-  if (yearMatch) {
-    const year = Number(yearMatch[1]);
-    const monthNames = {
-      1: ['كانون الثاني', 'يناير', 'جانفي'],
-      2: ['شباط', 'فبراير', 'فيفري'],
-      3: ['آذار', 'مارس'],
-      4: ['نيسان', 'أبريل', 'ابريل'],
-      5: ['أيار', 'مايو'],
-      6: ['حزيران', 'يونيو'],
-      7: ['تموز', 'يوليو'],
-      8: ['آب', 'أغسطس', 'اغسطس'],
-      9: ['أيلول', 'سبتمبر'],
-      10: ['تشرين الأول', 'أكتوبر', 'اكتوبر'],
-      11: ['تشرين الثاني', 'نوفمبر'],
-      12: ['كانون الأول', 'ديسمبر']
-    };
-    const names = monthNames[targetMonth] || [];
-    if (year === targetYear && names.some(name => raw.includes(name))) return true;
-
-    const numeric = raw.match(/(?:^|\D)(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})(?:\D|$)/);
-    if (numeric && Number(numeric[2]) === targetMonth && Number(numeric[3]) === targetYear) return true;
-  }
-
-  if (!item.formattedDate && !item.date && item.archivedAt) {
-    const d = new Date(item.archivedAt);
-    if (!Number.isNaN(d.getTime()) && d.getFullYear() === targetYear && d.getMonth() + 1 === targetMonth) return true;
-  }
-  return false;
-}
-
-window.deleteSelectedMonthData = async function() {
-  if (!currentUserUid) {
-    alert('يرجى تسجيل الدخول أولاً.');
-    return;
-  }
-  const year = Number(document.getElementById('yearSelect')?.value || 2026);
-  const month = Number(document.getElementById('monthSelect')?.value || 11);
-  const monthLabel = `${String(month).padStart(2, '0')}/${year}`;
-
-  if (!confirm(`تحذير: سيتم حذف جميع مواد شهر ${monthLabel} نهائياً من الأرشيف والجهاز وFirebase، ولن يمكن استعادتها من التطبيق. هل تريد المتابعة؟`)) return;
-  if (!confirm(`تأكيد أخير: هل أنت متأكد من حذف شهر ${monthLabel} فقط، مع الإبقاء على جميع الأشهر الأخرى؟`)) return;
-
-  try {
-    setSyncBadge('syncing');
-    const archiveBefore = readArchive();
-    const monthArchive = archiveBefore.filter(item => itemBelongsToMonth(item, year, month));
-    const archiveIds = new Set(monthArchive.map(item => String(item.id || '')).filter(Boolean));
-    const archiveArchIds = new Set(monthArchive.map(item => String(item.archId || '')).filter(Boolean));
-
-    const itemsQuery = query(collection(db, ITEMS_COLLECTION), where('uid', '==', currentUserUid));
-    const cloudSnapshot = await getDocs(itemsQuery);
-    const docsToDelete = [];
-    cloudSnapshot.forEach(docSnap => {
-      const data = docSnap.data() || {};
-      const itemId = String(data.id || docSnap.id);
-      if (itemBelongsToMonth(data, year, month) || archiveIds.has(itemId)) {
-        docsToDelete.push(docSnap.ref);
-      }
-    });
-
-    for (const ref of docsToDelete) await deleteDoc(ref);
-
-    const remainingArchive = archiveBefore.filter(item => !itemBelongsToMonth(item, year, month) && !archiveArchIds.has(String(item.archId || '')));
-    const cloudArchiveSaved = await pushArchiveToCloud(remainingArchive);
-    if (!cloudArchiveSaved) throw new Error('تعذر تحديث أرشيف Firebase. لم يتم إنهاء الحذف المحلي.');
-
-    writeArchive(remainingArchive);
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !key.startsWith('baytna_items_')) continue;
-      const datePart = key.slice('baytna_items_'.length);
-      const d = new Date(datePart);
-      if (!Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() + 1 === month) keysToRemove.push(key);
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-
-    allItemsCache = allItemsCache.filter(item => !itemBelongsToMonth(item, year, month));
-    saveTodayLocalItems();
-    window.renderItemsList(allItemsCache);
-    window.loadSelectedMonthData();
-    setSyncBadge('online');
-    alert(`اكتمل حذف شهر ${monthLabel} نهائياً.\nحُذفت ${monthArchive.length} مادة من الأرشيف و${docsToDelete.length} مستنداً من Firebase.\nبقية الأشهر لم تُمس.`);
-  } catch (error) {
-    console.error('deleteSelectedMonthData error', error);
-    setSyncBadge('offline');
-    alert('لم يكتمل الحذف بالكامل بسبب خطأ في الاتصال أو الصلاحيات:\n' + (error?.message || error) + '\nلم يتم مسح النسخة المحلية بعد فشل مزامنة الأرشيف. تحقق من الاتصال وقواعد Firestore ثم أعد المحاولة.');
-  }
-};
-
-/* ============ السجل الشهري ============ */
 window.showMonthlyReport = async function() {
   document.getElementById('monthlyModal').style.display = 'flex';
-  if (allItemsCache.length > 0) {
-    archiveItemsToStore(allItemsCache.filter(item => item.archived !== true), new Date(), true);
-    await pushArchiveToCloud(readArchive());
-  }
   loadSelectedMonthData();
 };
 window.closeMonthlyReport = function() { document.getElementById('monthlyModal').style.display = 'none'; };
 
 window.loadSelectedMonthData = function() {
   const year = parseInt(document.getElementById('yearSelect')?.value || '2026');
-  const month = parseInt(document.getElementById('monthSelect')?.value || '10');
+  const month = parseInt(document.getElementById('monthSelect')?.value || '11');
   const container = document.getElementById('monthlyContent');
   if (!container) return;
   const archive = readArchive();
-  const monthItems = archive.filter(it => { const t = it.timestamp ? new Date(it.timestamp) : null; return t && t.getFullYear() === year && (t.getMonth() + 1) === month; });
+  const monthItems = archive.filter(it => { if (!it.timestamp) return false; const t = new Date(it.timestamp); return t.getFullYear() === year && (t.getMonth() + 1) === month; });
   if (monthItems.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:30px 0;">لا توجد بيانات لهذا الشهر.</p>'; return; }
   const byDay = {};
   monthItems.forEach(it => { const t = new Date(it.timestamp); const dayKey = t.getDate(); if (!byDay[dayKey]) byDay[dayKey] = { items: [], total: 0, label: it.archivedDate || t.toLocaleDateString('ar-SY') }; const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1); byDay[dayKey].items.push(it); byDay[dayKey].total += sub; });
@@ -920,25 +628,113 @@ window.saveEditedArchiveItem = function() { const archId = document.getElementBy
 window.deleteArchiveItemFromModal = function() { const archId = document.getElementById('editItemArchId').value; closeEditItemModal(); deleteArchiveItem(archId); };
 window.deleteArchiveItem = function(archId) { if (!confirm("حذف هذه المادة من السجل؟")) return; const archive = readArchive().filter(x => x.archId !== archId); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
 window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); if (!confirm(`حذف جميع مواد يوم ${d}/${m}/${y}؟`)) return; const archive = readArchive().filter(it => { if (!it.timestamp) return true; const t = new Date(it.timestamp); return !(t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d); }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
-window.moveDayToAnotherDate = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`); if (!input) return; const parts = input.split('-').map(Number); if (parts.length !== 3 || parts.some(isNaN)) return; const [ny, nm, nd] = parts; const newDate = new Date(ny, nm - 1, nd); if (isNaN(newDate.getTime())) return; const archive = readArchive(); const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const newBaseTs = newDate.getTime(); let count = 0; archive.forEach(it => { if (!it.timestamp) return; const t = new Date(it.timestamp); if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) { it.timestamp = newBaseTs + count; it.archivedDate = newLabel; it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp; count++; } }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
+
+window.moveDayToAnotherDate = function(dayKeyStr) {
+  const [y, m, d] = dayKeyStr.split('-').map(Number);
+  const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+  if (!input) return;
+  const parts = input.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return;
+  const [ny, nm, nd] = parts;
+  const newDate = new Date(ny, nm - 1, nd, 0, 0, 0, 0);
+  if (isNaN(newDate.getTime())) return;
+  const archive = readArchive();
+  const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const newBaseTs = newDate.getTime();
+  let count = 0;
+  archive.forEach(it => {
+    if (!it.timestamp) return;
+    const t = new Date(it.timestamp);
+    if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) {
+      it.timestamp = newBaseTs + count;
+      it.archivedDate = newLabel;
+      it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp;
+      count++;
+    }
+  });
+  writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData();
+};
+
 window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
 
-/* ============ تصدير واستيراد البيانات ============ */
+function normalizeArabicDigits(value) { return String(value ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)); }
+function itemBelongsToMonth(item, targetYear, targetMonth) {
+  if (!item) return false;
+  if (item.timestamp !== undefined && item.timestamp !== null && item.timestamp !== '') {
+    const stamp = Number(item.timestamp);
+    if (Number.isFinite(stamp)) { const d = new Date(stamp); if (d.getFullYear() === targetYear && d.getMonth() + 1 === targetMonth) return true; }
+  }
+  const raw = normalizeArabicDigits(item.formattedDate || item.date || '');
+  const yearMatch = raw.match(/(?:^|\D)(20\d{2})(?:\D|$)/);
+  if (yearMatch) {
+    const year = Number(yearMatch[1]);
+    const monthNames = { 1: ['كانون الثاني', 'يناير', 'جانفي'], 2: ['شباط', 'فبراير', 'فيفري'], 3: ['آذار', 'مارس'], 4: ['نيسان', 'أبريل', 'ابريل'], 5: ['أيار', 'مايو'], 6: ['حزيران', 'يونيو'], 7: ['تموز', 'يوليو'], 8: ['آب', 'أغسطس', 'اغسطس'], 9: ['أيلول', 'سبتمبر'], 10: ['تشرين الأول', 'أكتوبر', 'اكتوبر'], 11: ['تشرين الثاني', 'نوفمبر'], 12: ['كانون الأول', 'ديسمبر'] };
+    const names = monthNames[targetMonth] || [];
+    if (year === targetYear && names.some(name => raw.includes(name))) return true;
+    const numeric = raw.match(/(?:^|\D)(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})(?:\D|$)/);
+    if (numeric && Number(numeric[2]) === targetMonth && Number(numeric[3]) === targetYear) return true;
+  }
+  if (!item.formattedDate && !item.date && item.archivedAt) {
+    const d = new Date(item.archivedAt);
+    if (!Number.isNaN(d.getTime()) && d.getFullYear() === targetYear && d.getMonth() + 1 === targetMonth) return true;
+  }
+  return false;
+}
+
+window.deleteSelectedMonthData = async function() {
+  if (!currentUserUid) { alert('يرجى تسجيل الدخول أولاً.'); return; }
+  const year = Number(document.getElementById('yearSelect')?.value || 2026);
+  const month = Number(document.getElementById('monthSelect')?.value || 11);
+  const monthLabel = `${String(month).padStart(2, '0')}/${year}`;
+  if (!confirm(`تحذير: سيتم حذف جميع مواد شهر ${monthLabel} نهائياً من الأرشيف والجهاز وFirebase، ولن يمكن استعادتها من التطبيق. هل تريد المتابعة؟`)) return;
+  if (!confirm(`تأكيد أخير: هل أنت متأكد من حذف شهر ${monthLabel} فقط، مع الإبقاء على جميع الأشهر الأخرى؟`)) return;
+  try {
+    setSyncBadge('syncing');
+    const archiveBefore = readArchive();
+    const monthArchive = archiveBefore.filter(item => itemBelongsToMonth(item, year, month));
+    const archiveIds = new Set(monthArchive.map(item => String(item.id || '')).filter(Boolean));
+    const archiveArchIds = new Set(monthArchive.map(item => String(item.archId || '')).filter(Boolean));
+    const itemsQuery = query(collection(db, ITEMS_COLLECTION), where('uid', '==', currentUserUid));
+    const cloudSnapshot = await getDocs(itemsQuery);
+    const docsToDelete = [];
+    cloudSnapshot.forEach(docSnap => {
+      const data = docSnap.data() || {};
+      const itemId = String(data.id || docSnap.id);
+      if (itemBelongsToMonth(data, year, month) || archiveIds.has(itemId)) docsToDelete.push(docSnap.ref);
+    });
+    for (const ref of docsToDelete) await deleteDoc(ref);
+    const remainingArchive = archiveBefore.filter(item => !itemBelongsToMonth(item, year, month) && !archiveArchIds.has(String(item.archId || '')));
+    const cloudArchiveSaved = await pushArchiveToCloud(remainingArchive);
+    if (!cloudArchiveSaved) throw new Error('تعذر تحديث أرشيف Firebase. لم يتم إنهاء الحذف المحلي.');
+    writeArchive(remainingArchive);
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith('baytna_items_')) continue;
+      const datePart = key.slice('baytna_items_'.length);
+      const d = new Date(datePart);
+      if (!Number.isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() + 1 === month) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    allItemsCache = allItemsCache.filter(item => !itemBelongsToMonth(item, year, month));
+    saveTodayLocalItems();
+    window.renderItemsList(allItemsCache);
+    window.loadSelectedMonthData();
+    setSyncBadge('online');
+    alert(`اكتمل حذف شهر ${monthLabel} نهائياً.\nحُذفت ${monthArchive.length} مادة من الأرشيف و${docsToDelete.length} مستنداً من Firebase.\nبقية الأشهر لم تُمس.`);
+  } catch (error) {
+    console.error('deleteSelectedMonthData error', error);
+    setSyncBadge('offline');
+    alert('لم يكتمل الحذف بالكامل بسبب خطأ في الاتصال أو الصلاحيات:\n' + (error?.message || error) + '\nلم يتم مسح النسخة المحلية بعد فشل مزامنة الأرشيف. تحقق من الاتصال وقواعد Firestore ثم أعد المحاولة.');
+  }
+};
+
 window.exportData = function() {
-  const data = {
-    archive: readArchive(),
-    items: allItemsCache,
-    exportedAt: new Date().toISOString()
-  };
+  const data = { archive: readArchive(), items: allItemsCache, exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `baytna-backup-${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href = url; a.download = `baytna-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   alert('تم تصدير نسخة احتياطية من البيانات.');
 };
 
@@ -952,28 +748,18 @@ window.importData = function(event) {
       if (!data.items && !data.archive) throw new Error('ملف غير صالح');
       if (confirm('سيتم استبدال البيانات الحالية بالبيانات المستوردة. هل أنت متأكد؟')) {
         if (data.archive) writeArchive(data.archive);
-        if (data.items) {
-          allItemsCache = data.items;
-          saveTodayLocalItems();
-        }
+        if (data.items) { allItemsCache = data.items; saveTodayLocalItems(); }
         window.renderItemsList(allItemsCache);
         await pushArchiveToCloud(readArchive());
-        if (data.items) {
-          for (const item of data.items) {
-            await pushItemToCloud(item);
-          }
-        }
+        if (data.items) { for (const item of data.items) await pushItemToCloud(item); }
         alert('تم استيراد البيانات بنجاح.');
       }
-    } catch (err) {
-      alert('خطأ في قراءة الملف: ' + err.message);
-    }
+    } catch (err) { alert('خطأ في قراءة الملف: ' + err.message); }
     event.target.value = '';
   };
   reader.readAsText(file);
 };
 
-/* ============ بدء التطبيق ============ */
 (function init() {
   displayTodayHeaderInfo();
   const savedName = localStorage.getItem(USER_PREFIX + 'name');
