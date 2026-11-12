@@ -212,7 +212,6 @@
       <select id="itemUnitInput" class="form-control"><option value="كغ">كغ</option><option value="ليتر">ليتر</option><option value="علبه">علبه</option><option value="ربطة">ربطة</option><option value="قطعة">قطعة</option></select>
     </div>
     <button class="btn-submit" onclick="submitNewItem()">حفظ المادة</button>
-    <button class="btn" style="background: var(--text-light); margin-top: 10px;" onclick="document.getElementById('addItemModal').style.display='none'">إلغاء</button>
   </div>
 </div>
 
@@ -229,7 +228,6 @@
     <div class="form-group" style="margin-bottom:10px;"><label class="form-label">وحدة القياس</label><select id="editItemUnit" class="form-control"><option value="كغ">كغ</option><option value="ليتر">ليتر</option><option value="علبه">علبه</option><option value="ربطة">ربطة</option><option value="قطعة">قطعة</option></select></div>
     <button class="btn-submit" onclick="saveEditedArchiveItem()">💾 حفظ التعديل</button>
     <button class="btn-danger" onclick="deleteArchiveItemFromModal()">🗑️ حذف هذه المادة نهائياً</button>
-    <button class="btn" style="background: var(--text-light); margin-top: 10px;" onclick="document.getElementById('editItemModal').style.display='none'">إلغاء</button>
   </div>
 </div>
 
@@ -246,7 +244,6 @@
       <button class="calc-btn" onclick="pressCalc('1')">1</button><button class="calc-btn" onclick="pressCalc('2')">2</button><button class="calc-btn" onclick="pressCalc('3')">3</button>
       <button class="calc-btn" onclick="pressCalc('0')" style="grid-column: span 2;">0</button><button class="calc-btn" onclick="pressCalc('.')">.</button>
     </div>
-    <button class="btn" style="background: var(--text-light); margin-top: 10px;" onclick="document.getElementById('calculatorModal').style.display='none'">إغلاق</button>
   </div>
 </div>
 
@@ -263,8 +260,6 @@
     <div id="monthlyReportPrintable"><div id="monthlyContent" style="background: var(--card); padding: 16px; border-radius: 16px; border: 1px solid var(--border);"><p style="text-align: center; color: var(--text-light);">جارِ جلب الأرشيف...</p></div></div>
     <button class="pdf-btn" onclick="downloadPDF()">📄 حفظ الأرشيف كملف PDF</button>
     <button class="btn-danger" style="margin-top:10px;" onclick="deleteSelectedMonthData()">🗑️ حذف جميع بيانات الشهر المحدد نهائياً</button>
-    <!-- زر الإغلاق الجديد -->
-    <button class="btn" style="background: var(--text-light); margin-top: 10px;" onclick="document.getElementById('monthlyModal').style.display='none'">🔙 إغلاق السجل والعودة</button>
   </div>
 </div>
 
@@ -568,7 +563,15 @@ window.renderItemsList = function(items) {
   const listContainer = document.getElementById('itemsList');
   if (!listContainer) return;
   let html = "", totalP = 0, doneCount = 0, activeCount = 0;
-  items.sort((a, b) => { const sa = a.status || 'active', sb = b.status || 'active'; if (sa === 'active' && sb !== 'active') return -1; if (sa !== 'active' && sb === 'active') return 1; return 0; });
+  // ترتيب المواد: active أولاً، ثم الأحدث أولاً
+  items.sort((a, b) => {
+    const sa = a.status || 'active', sb = b.status || 'active';
+    if (sa === 'active' && sb !== 'active') return -1;
+    if (sa !== 'active' && sb === 'active') return 1;
+    const ta = a.timestamp || parseInt(a.id.replace('local_', '')) || 0;
+    const tb = b.timestamp || parseInt(b.id.replace('local_', '')) || 0;
+    return tb - ta;
+  });
   items.forEach((data) => {
     const p = parseFloat(data.price) || 0, w = parseFloat(data.weight) || 1, u = data.unit || 'كغ', status = data.status || 'active', sub = p * w;
     if (status !== 'cancelled') { totalP += sub; if (status === 'done') doneCount++; else activeCount++; }
@@ -611,7 +614,8 @@ window.loadSelectedMonthData = function() {
   if (monthItems.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:30px 0;">لا توجد بيانات لهذا الشهر.</p>'; return; }
   const byDay = {};
   monthItems.forEach(it => { const t = new Date(it.timestamp); const dayKey = t.getDate(); if (!byDay[dayKey]) byDay[dayKey] = { items: [], total: 0, label: it.archivedDate || t.toLocaleDateString('ar-SY') }; const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1); byDay[dayKey].items.push(it); byDay[dayKey].total += sub; });
-  const days = Object.keys(byDay).map(Number).sort((a, b) => a - b);
+  // ترتيب الأيام من الأحدث إلى الأقدم
+  const days = Object.keys(byDay).map(Number).sort((a, b) => b - a);
   let grandTotal = 0, totalCount = 0;
   let html = `<div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--primary-dark);">سجل ${month}/${year} — ${monthItems.length} مادة</div>`;
   days.forEach(dayNum => {
@@ -762,6 +766,16 @@ window.importData = function(event) {
   };
   reader.readAsText(file);
 };
+
+// إغلاق النوافذ عند النقر خارجها
+['addItemModal', 'editItemModal', 'calculatorModal', 'monthlyModal'].forEach(id => {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === this) this.style.display = 'none';
+    });
+  }
+});
 
 (function init() {
   displayTodayHeaderInfo();
