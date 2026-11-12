@@ -379,8 +379,6 @@ function startCloudListener() {
     snapshot.forEach(d => cloudItems.push({ ...d.data(), id: d.data().id || d.id }));
     const todayFormatted = new Date().toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // لا نعرض إلا مواد اليوم غير المؤرشفة. لا يكفي فحص الحالة (active/done)،
-    // لأن المواد القديمة قد تبقى بهذه الحالة في Firestore بعد أرشفتها.
     const isVisibleTodayItem = (item) => {
       const itemDate = item.formattedDate || item.date || '';
       return item.archived !== true && itemDate === todayFormatted;
@@ -635,7 +633,6 @@ function archiveItemsToStore(items, dateObj, silent) {
 }
 
 window.archiveCurrentDay = async function() {
-  // تنظيف أي عنصر مؤرشف تسلل إلى القائمة قبل بدء الأرشفة.
   allItemsCache = allItemsCache.filter(item => item.archived !== true);
 
   if (allItemsCache.length === 0) {
@@ -646,8 +643,6 @@ window.archiveCurrentDay = async function() {
   if (!confirm("أرشفة مشتريات اليوم في السجل الشهري، وبدء يوم جديد؟")) return;
 
   const dateNow = new Date();
-  // نضع علامة الأرشفة على النسخة التي ستُحفظ في السجل وعلى مستند Firestore
-  // نفسه، حتى لا يعيده مستمع المزامنة إلى قائمة اليوم.
   const itemsToArchive = allItemsCache.map(item => ({
     ...item,
     archived: true,
@@ -657,7 +652,6 @@ window.archiveCurrentDay = async function() {
   const added = archiveItemsToStore(itemsToArchive, dateNow, false);
 
   try {
-    // حفظ سجل الأرشيف أولاً، ثم تحديث مستندات المواد الأصلية في السحابة.
     await pushArchiveToCloud(readArchive());
     for (const item of itemsToArchive) {
       await pushItemToCloud(item);
@@ -669,7 +663,6 @@ window.archiveCurrentDay = async function() {
     alert(`تمت أرشفة ${added} مادة وبدء يوم جديد.`);
   } catch (error) {
     console.error('archiveCurrentDay error', error);
-    // لا نفرغ القائمة إذا تعذرت عملية الحفظ؛ تبقى المواد ظاهرة كي لا تضيع.
     alert("تعذر إكمال المزامنة. بقيت المواد ظاهرة؛ تحقق من الاتصال ثم حاول مجدداً.");
   }
 };
@@ -713,6 +706,105 @@ window.markItemDone = function(id) { const item = allItemsCache.find(i => i.id =
 window.cancelItem = function(id) { const item = allItemsCache.find(i => i.id === id); if (!item) return; item.status = 'cancelled'; saveTodayLocalItems(); window.renderItemsList(allItemsCache); pushItemToCloud(item); };
 window.deleteItem = function(id) { if (!confirm("حذف هذه المادة نهائياً؟")) return; allItemsCache = allItemsCache.filter(i => i.id !== id); saveTodayLocalItems(); window.renderItemsList(allItemsCache); deleteItemFromCloud(id); };
 
+/* ============ السجل الشهري ============ */
+window.showMonthlyReport = async function() {
+  document.getElementById('monthlyModal').style.display = 'flex';
+  // ملاحظة: لا نضيف أي شيء إلى الأرشيف هنا، حتى لا تتكرر المواد عند فتح السجل.
+  loadSelectedMonthData();
+};
+window.closeMonthlyReport = function() { document.getElementById('monthlyModal').style.display = 'none'; };
+
+window.loadSelectedMonthData = function() {
+  const year = parseInt(document.getElementById('yearSelect')?.value || '2026');
+  const month = parseInt(document.getElementById('monthSelect')?.value || '11');
+  const container = document.getElementById('monthlyContent');
+  if (!container) return;
+
+  const archive = readArchive();
+  const monthItems = archive.filter(it => {
+    if (!it.timestamp) return false;
+    const t = new Date(it.timestamp);
+    return t.getFullYear() === year && (t.getMonth() + 1) === month;
+  });
+
+  if (monthItems.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:30px 0;">لا توجد بيانات لهذا الشهر.</p>';
+    return;
+  }
+
+  const byDay = {};
+  monthItems.forEach(it => {
+    const t = new Date(it.timestamp);
+    const dayKey = t.getDate();
+    if (!byDay[dayKey]) byDay[dayKey] = { items: [], total: 0, label: it.archivedDate || t.toLocaleDateString('ar-SY') };
+    const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1);
+    byDay[dayKey].items.push(it);
+    byDay[dayKey].total += sub;
+  });
+
+  const days = Object.keys(byDay).map(Number).sort((a, b) => b - a);
+
+  let grandTotal = 0, totalCount = 0;
+  let html = `<div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--primary-dark);">سجل ${month}/${year} — ${monthItems.length} مادة</div>`;
+
+  days.forEach(dayNum => {
+    const g = byDay[dayNum];
+    grandTotal += g.total;
+    totalCount += g.items.length;
+    const dayKeyStr = `${year}-${month}-${dayNum}`;
+    let rows = "";
+    g.items.forEach(it => {
+      const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1);
+      const statusTag = it.status === 'cancelled' ? ' (ملغى)' : '';
+      rows += `<div class="day-row"><span>${it.name}${statusTag} (${it.weight} ${it.unit || 'كغ'}) — <b>${sub.toFixed(2)} $</b></span><span class="row-actions"><button class="mini-btn edit" onclick="openEditArchiveItem('${it.archId}')">✏️</button><button class="mini-btn del" onclick="deleteArchiveItem('${it.archId}')">🗑️</button></span></div>`;
+    });
+    html += `<div class="day-group"><div class="day-group-header"><span>📅 ${g.label}</span><span>${g.total.toFixed(2)} $</span><span class="day-actions"><button class="mini-btn move" onclick="moveDayToAnotherDate('${dayKeyStr}')">🗓️ نقل</button><button class="mini-btn del" onclick="deleteWholeDay('${dayKeyStr}')">🗑️ حذف اليوم</button></span></div><div class="day-group-body">${rows}</div></div>`;
+  });
+
+  html += `<div class="month-grand-total"><span>الإجمالي الشهري (${totalCount} مادة)</span><span>${grandTotal.toFixed(2)} $</span></div>`;
+  container.innerHTML = html;
+};
+
+window.openEditArchiveItem = function(archId) { const archive = readArchive(); const item = archive.find(x => x.archId === archId); if (!item) return; document.getElementById('editItemArchId').value = archId; document.getElementById('editItemName').value = item.name || ''; document.getElementById('editItemPrice').value = item.price || 0; document.getElementById('editItemWeight').value = item.weight || 1; document.getElementById('editItemUnit').value = item.unit || 'كغ'; document.getElementById('editItemModal').style.display = 'flex'; };
+window.closeEditItemModal = function() { document.getElementById('editItemModal').style.display = 'none'; };
+window.saveEditedArchiveItem = function() { const archId = document.getElementById('editItemArchId').value; const archive = readArchive(); const idx = archive.findIndex(x => x.archId === archId); if (idx === -1) return; archive[idx].name = document.getElementById('editItemName').value.trim() || archive[idx].name; archive[idx].price = parseFloat(document.getElementById('editItemPrice').value) || 0; archive[idx].weight = parseFloat(document.getElementById('editItemWeight').value) || 1; archive[idx].unit = document.getElementById('editItemUnit').value; writeArchive(archive); pushArchiveToCloud(archive); closeEditItemModal(); loadSelectedMonthData(); };
+window.deleteArchiveItemFromModal = function() { const archId = document.getElementById('editItemArchId').value; closeEditItemModal(); deleteArchiveItem(archId); };
+window.deleteArchiveItem = function(archId) { if (!confirm("حذف هذه المادة من السجل؟")) return; const archive = readArchive().filter(x => x.archId !== archId); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
+window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); if (!confirm(`حذف جميع مواد يوم ${d}/${m}/${y}؟`)) return; const archive = readArchive().filter(it => { if (!it.timestamp) return true; const t = new Date(it.timestamp); return !(t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d); }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
+
+window.moveDayToAnotherDate = function(dayKeyStr) {
+  const [y, m, d] = dayKeyStr.split('-').map(Number);
+  const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+  if (!input) return;
+  const parts = input.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return;
+  const [ny, nm, nd] = parts;
+  const newDate = new Date(ny, nm - 1, nd, 0, 0, 0, 0);
+  if (isNaN(newDate.getTime())) return;
+
+  const archive = readArchive();
+  const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const newBaseTs = newDate.getTime();
+  let count = 0;
+
+  archive.forEach(it => {
+    if (!it.timestamp) return;
+    const t = new Date(it.timestamp);
+    if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) {
+      it.timestamp = newBaseTs + count;
+      it.archivedDate = newLabel;
+      it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp;
+      count++;
+    }
+  });
+
+  writeArchive(archive);
+  pushArchiveToCloud(archive);
+  loadSelectedMonthData();
+};
+
+window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
+
 /* ============ حذف شهر كامل من الجهاز وFirebase ============ */
 function normalizeArabicDigits(value) {
   return String(value ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
@@ -721,7 +813,6 @@ function normalizeArabicDigits(value) {
 function itemBelongsToMonth(item, targetYear, targetMonth) {
   if (!item) return false;
 
-  // الطابع الزمني في الأرشيف هو المرجع الأدق.
   if (item.timestamp !== undefined && item.timestamp !== null && item.timestamp !== '') {
     const stamp = Number(item.timestamp);
     if (Number.isFinite(stamp)) {
@@ -730,7 +821,6 @@ function itemBelongsToMonth(item, targetYear, targetMonth) {
     }
   }
 
-  // بعض السجلات القديمة تحفظ التاريخ كنص عربي (مثل: الخميس، ١٢ تشرين الثاني ٢٠٢٦).
   const raw = normalizeArabicDigits(item.formattedDate || item.date || '');
   const yearMatch = raw.match(/(?:^|\D)(20\d{2})(?:\D|$)/);
   if (yearMatch) {
@@ -752,12 +842,10 @@ function itemBelongsToMonth(item, targetYear, targetMonth) {
     const names = monthNames[targetMonth] || [];
     if (year === targetYear && names.some(name => raw.includes(name))) return true;
 
-    // دعم التواريخ الرقمية مثل 12/11/2026 أو 12-11-2026.
     const numeric = raw.match(/(?:^|\D)(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})(?:\D|$)/);
     if (numeric && Number(numeric[2]) === targetMonth && Number(numeric[3]) === targetYear) return true;
   }
 
-  // احتياط للسجلات التي لا تحتوي على تاريخ الشراء ولكن تحتوي على تاريخ الأرشفة.
   if (!item.formattedDate && !item.date && item.archivedAt) {
     const d = new Date(item.archivedAt);
     if (!Number.isNaN(d.getTime()) && d.getFullYear() === targetYear && d.getMonth() + 1 === targetMonth) return true;
@@ -784,7 +872,6 @@ window.deleteSelectedMonthData = async function() {
     const archiveIds = new Set(monthArchive.map(item => String(item.id || '')).filter(Boolean));
     const archiveArchIds = new Set(monthArchive.map(item => String(item.archId || '')).filter(Boolean));
 
-    // قراءة مستندات هذا الحساب فقط، ثم حذف ما يطابق الشهر المحدد.
     const itemsQuery = query(collection(db, ITEMS_COLLECTION), where('uid', '==', currentUserUid));
     const cloudSnapshot = await getDocs(itemsQuery);
     const docsToDelete = [];
@@ -796,14 +883,12 @@ window.deleteSelectedMonthData = async function() {
       }
     });
 
-    // حذف المستندات السحابية أولاً؛ إذا فشل الحذف لن نمسح النسخة المحلية.
     for (const ref of docsToDelete) await deleteDoc(ref);
 
     const remainingArchive = archiveBefore.filter(item => !itemBelongsToMonth(item, year, month) && !archiveArchIds.has(String(item.archId || '')));
     const cloudArchiveSaved = await pushArchiveToCloud(remainingArchive);
     if (!cloudArchiveSaved) throw new Error('تعذر تحديث أرشيف Firebase. لم يتم إنهاء الحذف المحلي.');
 
-    // تحديث الأرشيف المحلي وإزالة قوائم الأيام المحلية التابعة للشهر المطلوب فقط.
     writeArchive(remainingArchive);
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -827,51 +912,6 @@ window.deleteSelectedMonthData = async function() {
     alert('لم يكتمل الحذف بالكامل بسبب خطأ في الاتصال أو الصلاحيات:\n' + (error?.message || error) + '\nلم يتم مسح النسخة المحلية بعد فشل مزامنة الأرشيف. تحقق من الاتصال وقواعد Firestore ثم أعد المحاولة.');
   }
 };
-
-/* ============ السجل الشهري ============ */
-window.showMonthlyReport = async function() {
-  document.getElementById('monthlyModal').style.display = 'flex';
-  // هذا مجرد تسجيل نسخة في التقرير الشهري، وليس إنهاءً لليوم أو أرشفة للمواد.
-  if (allItemsCache.length > 0) {
-    archiveItemsToStore(allItemsCache.filter(item => item.archived !== true), new Date(), true);
-    await pushArchiveToCloud(readArchive());
-  }
-  loadSelectedMonthData();
-};
-window.closeMonthlyReport = function() { document.getElementById('monthlyModal').style.display = 'none'; };
-
-window.loadSelectedMonthData = function() {
-  const year = parseInt(document.getElementById('yearSelect')?.value || '2026');
-  const month = parseInt(document.getElementById('monthSelect')?.value || '10');
-  const container = document.getElementById('monthlyContent');
-  if (!container) return;
-  const archive = readArchive();
-  const monthItems = archive.filter(it => { const t = it.timestamp ? new Date(it.timestamp) : null; return t && t.getFullYear() === year && (t.getMonth() + 1) === month; });
-  if (monthItems.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:30px 0;">لا توجد بيانات لهذا الشهر.</p>'; return; }
-  const byDay = {};
-  monthItems.forEach(it => { const t = new Date(it.timestamp); const dayKey = t.getDate(); if (!byDay[dayKey]) byDay[dayKey] = { items: [], total: 0, label: it.archivedDate || t.toLocaleDateString('ar-SY') }; const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1); byDay[dayKey].items.push(it); byDay[dayKey].total += sub; });
-  const days = Object.keys(byDay).map(Number).sort((a, b) => a - b);
-  let grandTotal = 0, totalCount = 0;
-  let html = `<div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--primary-dark);">سجل ${month}/${year} — ${monthItems.length} مادة</div>`;
-  days.forEach(dayNum => {
-    const g = byDay[dayNum]; grandTotal += g.total; totalCount += g.items.length;
-    const dayKeyStr = `${year}-${month}-${dayNum}`;
-    let rows = "";
-    g.items.forEach(it => { const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1); const statusTag = it.status === 'cancelled' ? ' (ملغى)' : ''; rows += `<div class="day-row"><span>${it.name}${statusTag} (${it.weight} ${it.unit || 'كغ'}) — <b>${sub.toFixed(2)} $</b></span><span class="row-actions"><button class="mini-btn edit" onclick="openEditArchiveItem('${it.archId}')">✏️</button><button class="mini-btn del" onclick="deleteArchiveItem('${it.archId}')">🗑️</button></span></div>`; });
-    html += `<div class="day-group"><div class="day-group-header"><span>📅 ${g.label}</span><span>${g.total.toFixed(2)} $</span><span class="day-actions"><button class="mini-btn move" onclick="moveDayToAnotherDate('${dayKeyStr}')">🗓️ نقل</button><button class="mini-btn del" onclick="deleteWholeDay('${dayKeyStr}')">🗑️ حذف اليوم</button></span></div><div class="day-group-body">${rows}</div></div>`;
-  });
-  html += `<div class="month-grand-total"><span>الإجمالي الشهري (${totalCount} مادة)</span><span>${grandTotal.toFixed(2)} $</span></div>`;
-  container.innerHTML = html;
-};
-
-window.openEditArchiveItem = function(archId) { const archive = readArchive(); const item = archive.find(x => x.archId === archId); if (!item) return; document.getElementById('editItemArchId').value = archId; document.getElementById('editItemName').value = item.name || ''; document.getElementById('editItemPrice').value = item.price || 0; document.getElementById('editItemWeight').value = item.weight || 1; document.getElementById('editItemUnit').value = item.unit || 'كغ'; document.getElementById('editItemModal').style.display = 'flex'; };
-window.closeEditItemModal = function() { document.getElementById('editItemModal').style.display = 'none'; };
-window.saveEditedArchiveItem = function() { const archId = document.getElementById('editItemArchId').value; const archive = readArchive(); const idx = archive.findIndex(x => x.archId === archId); if (idx === -1) return; archive[idx].name = document.getElementById('editItemName').value.trim() || archive[idx].name; archive[idx].price = parseFloat(document.getElementById('editItemPrice').value) || 0; archive[idx].weight = parseFloat(document.getElementById('editItemWeight').value) || 1; archive[idx].unit = document.getElementById('editItemUnit').value; writeArchive(archive); pushArchiveToCloud(archive); closeEditItemModal(); loadSelectedMonthData(); };
-window.deleteArchiveItemFromModal = function() { const archId = document.getElementById('editItemArchId').value; closeEditItemModal(); deleteArchiveItem(archId); };
-window.deleteArchiveItem = function(archId) { if (!confirm("حذف هذه المادة من السجل؟")) return; const archive = readArchive().filter(x => x.archId !== archId); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
-window.deleteWholeDay = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); if (!confirm(`حذف جميع مواد يوم ${d}/${m}/${y}؟`)) return; const archive = readArchive().filter(it => { if (!it.timestamp) return true; const t = new Date(it.timestamp); return !(t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d); }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
-window.moveDayToAnotherDate = function(dayKeyStr) { const [y, m, d] = dayKeyStr.split('-').map(Number); const input = prompt(`نقل يوم ${d}/${m}/${y} إلى تاريخ جديد (YYYY-MM-DD):`, `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`); if (!input) return; const parts = input.split('-').map(Number); if (parts.length !== 3 || parts.some(isNaN)) return; const [ny, nm, nd] = parts; const newDate = new Date(ny, nm - 1, nd); if (isNaN(newDate.getTime())) return; const archive = readArchive(); const newLabel = newDate.toLocaleDateString('ar-SY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); const newBaseTs = newDate.getTime(); let count = 0; archive.forEach(it => { if (!it.timestamp) return; const t = new Date(it.timestamp); if (t.getFullYear() === y && (t.getMonth() + 1) === m && t.getDate() === d) { it.timestamp = newBaseTs + count; it.archivedDate = newLabel; it.archId = 'arch_' + (it.id || 'x') + '_' + it.timestamp; count++; } }); writeArchive(archive); pushArchiveToCloud(archive); loadSelectedMonthData(); };
-window.downloadPDF = function() { const el = document.getElementById('monthlyReportPrintable'); if (!el || typeof html2pdf === 'undefined') return; html2pdf().set({ margin: 10, filename: 'baytna_report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save(); };
 
 /* ============ تصدير واستيراد البيانات ============ */
 window.exportData = function() {
