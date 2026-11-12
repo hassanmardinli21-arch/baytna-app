@@ -600,7 +600,9 @@ window.showMonthlyReport = async function() {
   loadSelectedMonthData();
 };
 window.closeMonthlyReport = function() { document.getElementById('monthlyModal').style.display = 'none'; };
-
+document.getElementById('monthlyModal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
 window.loadSelectedMonthData = function() {
   const year = parseInt(document.getElementById('yearSelect')?.value || '2026');
   const month = parseInt(document.getElementById('monthSelect')?.value || '11');
