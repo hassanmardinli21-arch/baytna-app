@@ -105,6 +105,29 @@
   .backup-actions .btn { flex: 1; padding: 12px; font-size: 14px; background: var(--card); color: var(--primary-dark); border: 1px solid var(--primary); box-shadow: none; }
   .backup-actions .btn:hover { background: #f0f0f0; }
   .backup-actions input[type="file"] { display: none; }
+
+  /* ===== أنماط حاسبة الكمية المشتراة المضافة ===== */
+  .qty-calc-header { background: var(--primary); padding: 24px 20px; text-align: center; color: white; border-radius: 16px 16px 0 0; margin: -24px -24px 20px -24px; }
+  .qty-calc-icon { background-color: rgba(255, 255, 255, 0.2); width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin: 0 auto 12px auto; }
+  .qty-calc-icon svg { width: 28px; height: 28px; fill: white; }
+  .qty-calc-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .qty-calc-header p { font-size: 12px; opacity: 0.9; font-weight: 400; }
+  .qty-section-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; display: block; text-align: right; }
+  .qty-unit-toggle { display: flex; background-color: #f0f4f8; border-radius: 14px; padding: 5px; margin-bottom: 20px; border: 1px solid var(--border); }
+  .qty-unit-btn { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--text-light); cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: all 0.3s ease; font-family: inherit; }
+  .qty-unit-btn.active { background-color: white; color: var(--text); box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; }
+  .qty-input-group { margin-bottom: 16px; }
+  .qty-input-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .qty-input-header label { font-size: 14px; font-weight: 700; color: var(--text); }
+  .qty-badge { background-color: #e6f7f3; color: var(--primary-dark); font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+  .qty-input-wrapper { position: relative; display: flex; align-items: center; }
+  .qty-input-wrapper input { width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; font-size: 18px; font-weight: 600; color: var(--text); background-color: #f8fafc; outline: none; transition: border-color 0.3s ease; text-align: left; direction: ltr; font-family: inherit; }
+  .qty-input-wrapper input:focus { border-color: var(--primary); background-color: white; }
+  .qty-input-suffix { position: absolute; right: 16px; color: #a0aec0; font-size: 13px; font-weight: 400; pointer-events: none; }
+  .qty-result-box { background-color: #f0fdf9; border: 1.5px solid #bbf7d0; border-radius: 16px; padding: 20px; text-align: center; margin-top: 20px; }
+  .qty-result-box p { font-size: 14px; color: #4a5568; line-height: 1.6; margin: 0; }
+  .qty-result-box .highlight { color: var(--primary-dark); font-weight: 700; font-size: 16px; }
+  .qty-result-value { font-size: 26px; font-weight: 800; color: var(--primary-dark); margin-top: 5px; display: block; }
 </style>
 </head>
 <body>
@@ -140,6 +163,8 @@
     <div class="header-title">بيت <span id="usernameDisplay">حسان</span> <span>🏠</span></div>
     <div class="header-actions">
       <span id="syncBadge" class="sync-badge syncing">⏳ جارٍ</span>
+      <!-- زر الحاسبة الجديدة (حاسبة الكمية) -->
+      <button class="icon-btn" onclick="openQuantityCalculator()" title="حاسبة الكمية المشتراة">⚖️</button>
       <button class="icon-btn" onclick="openCalculator()" title="الآلة الحاسبة">🧮</button>
       <button class="icon-btn" onclick="showMonthlyReport()" title="الأرشيف والسجل الشهري">📅</button>
       <button class="icon-btn" onclick="logout()" title="خروج">🚪</button>
@@ -243,6 +268,51 @@
       <button class="calc-btn" onclick="pressCalc('4')">4</button><button class="calc-btn" onclick="pressCalc('5')">5</button><button class="calc-btn" onclick="pressCalc('6')">6</button><button class="calc-btn equal" onclick="calculateResult()">=</button>
       <button class="calc-btn" onclick="pressCalc('1')">1</button><button class="calc-btn" onclick="pressCalc('2')">2</button><button class="calc-btn" onclick="pressCalc('3')">3</button>
       <button class="calc-btn" onclick="pressCalc('0')" style="grid-column: span 2;">0</button><button class="calc-btn" onclick="pressCalc('.')">.</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== نافذة حاسبة الكمية المشتراة (الجديدة) ===== -->
+<div id="quantityCalculatorModal" class="modal-overlay">
+  <div class="sheet" style="padding: 0; overflow:auto; background: #fff;">
+    <div class="qty-calc-header">
+      <div class="qty-calc-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3C10.3431 3 9 4.34315 9 6C9 7.30622 9.83481 8.41746 11 8.82929V10H5V12H11V19H7V21H17V19H13V12H19V10H13V8.82929C14.1652 8.41746 15 7.30622 15 6C15 4.34315 13.6569 3 12 3ZM12 5C12.5523 5 13 5.44772 13 6C13 6.55228 12.5523 7 12 7C11.4477 7 11 6.55228 11 6C11 5.44772 11.4477 5 12 5Z"/>
+        </svg>
+      </div>
+      <h2>حاسبة الكمية المشتراة</h2>
+      <p>احسب الوزن أو الحجم فوراً من المبلغ المدفوع</p>
+    </div>
+    <div style="padding: 20px 24px 24px 24px;">
+      <span class="qty-section-label">اختر وحدة القياس:</span>
+      <div class="qty-unit-toggle">
+        <button class="qty-unit-btn active" onclick="setQtyUnit('weight', this)">⚖️ كيلو / جرام</button>
+        <button class="qty-unit-btn" onclick="setQtyUnit('volume', this)">💧 لتر / مليلتر</button>
+      </div>
+      <div class="qty-input-group">
+        <div class="qty-input-header">
+          <label>كم دفعت؟ (المبلغ المدفوع)</label>
+          <span class="qty-badge">المبلغ الكلي</span>
+        </div>
+        <div class="qty-input-wrapper">
+          <input type="number" id="qtyAmountInput" placeholder="مثال: 125" oninput="calculateQty()">
+          <span class="qty-input-suffix">عملة</span>
+        </div>
+      </div>
+      <div class="qty-input-group">
+        <div class="qty-input-header">
+          <label id="qtyPriceLabel">كم سعر الكيلو الواحد؟</label>
+          <span class="qty-badge" id="qtyUnitBadge">سعر 1 كيلو</span>
+        </div>
+        <div class="qty-input-wrapper">
+          <input type="number" id="qtyPriceInput" placeholder="مثال: 100" oninput="calculateQty()">
+          <span class="qty-input-suffix" id="qtyPriceSuffix">/ كيلو</span>
+        </div>
+      </div>
+      <div class="qty-result-box" id="qtyResultBox">
+        <p>أدخل <span class="highlight">المبلغ المدفوع</span> و <span class="highlight">سعر الكيلو</span> لتظهر لك الكمية فوراً</p>
+      </div>
     </div>
   </div>
 </div>
@@ -559,11 +629,63 @@ window.deleteCalcChar = function() { calcExpression = calcExpression.slice(0, -1
 window.calculateResult = function() { try { let res = eval(calcExpression); document.getElementById('calcScreen').innerText = res; calcExpression = res.toString(); } catch (e) { document.getElementById('calcScreen').innerText = "خطأ"; calcExpression = ""; } };
 window.calcMemory = function(action) { const s = document.getElementById('calcScreen'); if (action === 'MC') { calcMemoryValue = 0; s.innerText = "0"; calcExpression = ""; } else if (action === 'MR') { calcExpression += calcMemoryValue.toString(); s.innerText = calcExpression; } else if (action === 'M+') { try { calcMemoryValue += eval(calcExpression) || 0; s.innerText = "تم الحفظ"; setTimeout(() => { s.innerText = calcExpression || "0"; }, 800); } catch(e) {} } };
 
+// ===== دوال حاسبة الكمية المشتراة (الجديدة) =====
+let currentQtyUnit = 'weight';
+
+window.openQuantityCalculator = function() {
+  document.getElementById('quantityCalculatorModal').style.display = 'flex';
+  // إعادة تعيين الحقول عند الفتح
+  document.getElementById('qtyAmountInput').value = '';
+  document.getElementById('qtyPriceInput').value = '';
+  document.getElementById('qtyResultBox').innerHTML = '<p>أدخل <span class="highlight">المبلغ المدفوع</span> و <span class="highlight">سعر الكيلو</span> لتظهر لك الكمية فوراً</p>';
+};
+
+window.setQtyUnit = function(unit, btn) {
+  currentQtyUnit = unit;
+  document.querySelectorAll('.qty-unit-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const unitBadge = document.getElementById('qtyUnitBadge');
+  const priceSuffix = document.getElementById('qtyPriceSuffix');
+  const priceLabel = document.getElementById('qtyPriceLabel');
+
+  if (unit === 'weight') {
+    unitBadge.innerText = 'سعر 1 كيلو';
+    priceSuffix.innerText = '/ كيلو';
+    priceLabel.innerText = 'كم سعر الكيلو الواحد؟';
+  } else {
+    unitBadge.innerText = 'سعر 1 لتر';
+    priceSuffix.innerText = '/ لتر';
+    priceLabel.innerText = 'كم سعر اللتر الواحد؟';
+  }
+  calculateQty();
+};
+
+window.calculateQty = function() {
+  const amount = parseFloat(document.getElementById('qtyAmountInput').value);
+  const price = parseFloat(document.getElementById('qtyPriceInput').value);
+  const resultBox = document.getElementById('qtyResultBox');
+
+  if (amount > 0 && price > 0) {
+    const quantity = amount / price;
+    const formattedQuantity = parseFloat(quantity.toFixed(2));
+    const unitName = currentQtyUnit === 'weight' ? 'كيلو' : 'لتر';
+    resultBox.innerHTML = `
+      <p>الكمية المشتراة هي:</p>
+      <span class="qty-result-value">${formattedQuantity} ${unitName}</span>
+    `;
+  } else {
+    const unitName = currentQtyUnit === 'weight' ? 'الكيلو' : 'اللتر';
+    resultBox.innerHTML = `
+      <p>أدخل <span class="highlight">المبلغ المدفوع</span> و <span class="highlight">سعر ${unitName}</span> لتظهر لك الكمية فوراً</p>
+    `;
+  }
+};
+
 window.renderItemsList = function(items) {
   const listContainer = document.getElementById('itemsList');
   if (!listContainer) return;
   let html = "", totalP = 0, doneCount = 0, activeCount = 0;
-  // ترتيب المواد: active أولاً، ثم الأحدث أولاً
   items.sort((a, b) => {
     const sa = a.status || 'active', sb = b.status || 'active';
     if (sa === 'active' && sb !== 'active') return -1;
@@ -614,7 +736,6 @@ window.loadSelectedMonthData = function() {
   if (monthItems.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:30px 0;">لا توجد بيانات لهذا الشهر.</p>'; return; }
   const byDay = {};
   monthItems.forEach(it => { const t = new Date(it.timestamp); const dayKey = t.getDate(); if (!byDay[dayKey]) byDay[dayKey] = { items: [], total: 0, label: it.archivedDate || t.toLocaleDateString('ar-SY') }; const sub = (parseFloat(it.price) || 0) * (parseFloat(it.weight) || 1); byDay[dayKey].items.push(it); byDay[dayKey].total += sub; });
-  // ترتيب الأيام من الأحدث إلى الأقدم
   const days = Object.keys(byDay).map(Number).sort((a, b) => b - a);
   let grandTotal = 0, totalCount = 0;
   let html = `<div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--primary-dark);">سجل ${month}/${year} — ${monthItems.length} مادة</div>`;
@@ -768,7 +889,7 @@ window.importData = function(event) {
 };
 
 // إغلاق النوافذ عند النقر خارجها
-['addItemModal', 'editItemModal', 'calculatorModal', 'monthlyModal'].forEach(id => {
+['addItemModal', 'editItemModal', 'calculatorModal', 'monthlyModal', 'quantityCalculatorModal'].forEach(id => {
   const modal = document.getElementById(id);
   if (modal) {
     modal.addEventListener('click', function(e) {
